@@ -1,12 +1,10 @@
 ﻿using CalibrationTool;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows.Forms;
 using YamlDotNet.Serialization;
-using System.IO;
-using ConfigFileAssistant_v1;
-using System.Drawing;
-
+using DevExpress;
 namespace ConfigFileAssistant_v1
 {
     public partial class MainForm : Form
@@ -25,138 +23,67 @@ namespace ConfigFileAssistant_v1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            variablesListView.View = View.Details;
-            variablesListView.Columns.Add("Name", 150, HorizontalAlignment.Left);
             init();
-
         }
 
         private void init()
         {
             filePath = initFilePath;
             filePathTextBox.Text = filePath;
-            conf = new Config(); 
-            dataGridView.CellFormatting += DataGridView_CellFormatting;
-            dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;  
-            dataGridView.ReadOnly = true;
-            DataBind();
+            conf = new Config();
+            var csVariables = ConfigValidator.ExtractCsVariables();
+            var ymlVariables = ConfigValidator.ExtractYmlVariables(filePath);
+            AddCsVariablesToTreeView(csVariables, treeView1);
+            AddYmlYariablesToDataGridView(ymlVariables, dataGridView1);
         }
-        private void DataBind ()
+        private static void AddCsVariablesToTreeView(Dictionary<string, string> variables, TreeView treeView)
         {
-            dataGridView.Columns.Clear();
-            string csContent = _serializer.Serialize(conf);
-            string ymlContent = File.ReadAllText(filePath);
-            var csVariables = ConfigValidator.ExtractVariables(csContent);
-            var ymlVariables = ConfigValidator.ExtractVariables(ymlContent);
-            variables = ConfigValidator.CombineVariables(csVariables, ymlVariables);
-            dataGridView.DataSource = variables;
-            AddNumberColumn();
-            columnCount = dataGridView.ColumnCount;
-        }
-        private void AddNumberColumn()
-        {
-            // 순서 컬럼 생성
-            DataGridViewTextBoxColumn orderColumn = new DataGridViewTextBoxColumn
-            {
-                Name = "No",
-                HeaderText = "No",
-                ReadOnly = true,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
-            };
+            treeView.BeginUpdate();
+            treeView.Nodes.Clear();
 
-            dataGridView.Columns.Insert(0, orderColumn);
-
-            for (int i = 0; i < dataGridView.Rows.Count; ++i)
+            foreach (var kvp in variables)
             {
-                dataGridView.Rows[i].Cells["No"].Value = (i + 1).ToString();
-            }
-        }
-
-        private void DataGridView_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (dataGridView.Columns[e.ColumnIndex].DataPropertyName == nameof(Variable.Note))
+                string[] parts = kvp.Key.Split('.');
+                TreeNode currentNode = null;
+            foreach (var part in parts)
             {
-                var variable = dataGridView.Rows[e.RowIndex].DataBoundItem as Variable;
-                if (variable != null)
+                if (currentNode == null)
                 {
-                    switch (variable.Note)
+                    if (treeView.Nodes.ContainsKey(part))
                     {
-                        case NoteMessage.YML_ONLY:
-                            PaintCell(e,Color.Pink);
-                            break;
-                        case NoteMessage.CS_ONLY:
-                            PaintCell(e, Color.Aquamarine);
-                            break;
-                        case NoteMessage.TYPE_MISMATCH:
-                            PaintCell(e, Color.GreenYellow);
-                            break;
-                        default:
-                            break;
+                        currentNode = treeView.Nodes[part];
+                    }
+                    else
+                    {
+                        currentNode = treeView.Nodes.Add(part, part);
                     }
                 }
+                else
+                {
+                    if (currentNode.Nodes.ContainsKey(part))
+                    {
+                        currentNode = currentNode.Nodes[part];
+                    }
+                        else
+                        {
+                        currentNode = currentNode.Nodes.Add(part, part);
+                        }
+                    }
+                }
+                if (currentNode != null)
+                {
+                    currentNode.Tag = kvp.Value;
+                }
             }
-        }
 
-        private void PaintCell (DataGridViewCellFormattingEventArgs e, Color color)
+            treeView.EndUpdate();
+        }
+        private static void AddYmlYariablesToDataGridView(List<VariableInfo> variables, DataGridView dataGridView)
         {
-            for(int i = columnCount-1; i>=0; --i)
-            {
-                dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex-i].Style.BackColor = color;
-            }
+            dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dataGridView.ReadOnly = true;
+            dataGridView.DataSource = variables;    
         }
 
-        private void browseButton_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "Config Files|*.yml;*.json;*.bin;...";
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                filePath = ofd.FileName;
-                filePathTextBox.Text = filePath;
-                DataBind();
-            }
-        }
-
-        private void csOnlyFilter_CheckedChanged(object sender, EventArgs e)
-        {
-            ShowVariables(NoteMessage.CS_ONLY);
-        }
-
-        private void ymlOnlyFilter_CheckedChanged(object sender, EventArgs e)
-        {
-            ShowVariables(NoteMessage.YML_ONLY);
-        }
-
-        private void typeMismatchFilter_CheckedChanged(object sender, EventArgs e)
-        {
-            ShowVariables(NoteMessage.TYPE_MISMATCH);
-        }
-
-        private void okFilter_CheckedChanged(object sender, EventArgs e)
-        {
-            ShowVariables(NoteMessage.OK);
-        }
-
-        private void ShowVariables(NoteMessage noteMessage)
-        {
-            variablesListView.Items.Clear();
-            List<Variable> foundVariables = variables.FindAll(v => v.Note.Equals(noteMessage));
-            foreach (Variable v in foundVariables)
-            {
-                variablesListView.Items.Add(v.Name);
-            }
-        }
-
-        private void NEXT_Click(object sender, EventArgs e)
-        {
-            if(!ConfigValidator.isValidatedVariable(variables))
-            {
-                MessageBox.Show("값이 검증되지 않았습니다. Editor에서 수정하세요.");
-            }
-            else
-            {
-
-            }
-        }
     }
 }

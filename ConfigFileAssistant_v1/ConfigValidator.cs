@@ -1,11 +1,10 @@
-﻿using System;
+﻿using CalibrationTool;
+using CoPick.Setting;
+using System;
 using System.Collections.Generic;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using YamlDotNet.Core.Tokens;
+using System.Reflection;
 using YamlDotNet.RepresentationModel;
 
 namespace ConfigFileAssistant_v1
@@ -19,11 +18,13 @@ namespace ConfigFileAssistant_v1
     }
     public class VariableInfo
     {
+        public string Name { get; set; }
         public string Type { get; set; }
         public object Value { get; set; }
 
-        public VariableInfo(string type, object value)
+        public VariableInfo(string name, string type, object value)
         {
+            Name = name;
             Type = type;
             Value = value;
         }
@@ -45,113 +46,121 @@ namespace ConfigFileAssistant_v1
     
     public class ConfigValidator
     {
-        public static Dictionary<string, VariableInfo> ExtractVariables(string contents)
+        public static List<VariableInfo> ExtractYmlVariables(string filePath)
         {
-            var variables = new Dictionary<string, VariableInfo>();
+            var variables = new List<VariableInfo>();
 
-            var yamlStream = new YamlStream();
-            using (var reader = new StringReader(contents))
+            var yaml = new YamlStream();
+            using (var reader = new StreamReader(filePath))
             {
-                yamlStream.Load(reader);
+                yaml.Load(reader);
             }
 
-            var root = (YamlMappingNode)yamlStream.Documents[0].RootNode;
-
-            foreach (var entry in root.Children)
-            {
-                var key = ((YamlScalarNode)entry.Key).Value;
-                var valueNode = entry.Value;
-
-                if (valueNode is YamlMappingNode)
-                {
-                    variables[key] = new VariableInfo("Dictionary", new YamlMappingNode());
-                }
-                else if (valueNode is YamlSequenceNode)
-                {
-                    variables[key] = new VariableInfo("List", new YamlSequenceNode());
-                }
-                else
-                {
-                    var value = ConvertValue(valueNode);
-                    variables[key] = new VariableInfo(value.GetType().Name.ToString(), value);
-                }
-            }
-
+            var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
+            ExtractYmlVariablesRecursive(mapping, variables, "");
 
             return variables;
         }
 
-        static object ConvertValue(YamlNode valueNode)
+        private static void ExtractYmlVariablesRecursive(YamlNode node, List<VariableInfo> variables, string prefix)
         {
-            if (valueNode is YamlScalarNode scalarNode)
+            if (node is YamlMappingNode mappingNode)
             {
-                return GetValueType(scalarNode.Value);
-            }
-
-            return null;
-        }
-
-        static object GetValueType(string value)
-        {
-            if (bool.TryParse(value, out bool boolResult))
-            {
-                return boolResult;
-            }
-            if (int.TryParse(value, out int intResult))
-            {
-                return intResult;
-            }
-            if (double.TryParse(value, out double doubleResult))
-            {
-                return doubleResult;
-            }
-            return value;
-        }
-
-        public static List<Variable> CombineVariables(Dictionary<string, VariableInfo> csVariables, Dictionary<string, VariableInfo> ymlVariables) 
-        {
-            List<Variable> combinedVariables = new List<Variable>();
-            foreach (var item in csVariables)
-            {
-                var variable = new Variable(item.Key, NoteMessage.CS_ONLY);
-                variable.CsType = item.Value.Type;
-                combinedVariables.Add(variable);
-            }
-
-            foreach (var item in ymlVariables)
-            {
-                var variableInfo = item.Value as VariableInfo;
-                Variable foundVariable = combinedVariables.FirstOrDefault(v => v.Name == item.Key);
-                if(foundVariable != null)
+                variables.Add(new VariableInfo(prefix, "Dictionary", new YamlMappingNode()));
+                foreach (var entry in mappingNode.Children)
                 {
-                    foundVariable.YmlType = variableInfo.Type;
-                    if (!foundVariable.YmlType.Equals(foundVariable.CsType))
+                    var key = ((YamlScalarNode)entry.Key).Value;
+                    var newPrefix = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
+                    ExtractYmlVariablesRecursive(entry.Value, variables, newPrefix);
+                }
+            }
+            
+            else if (node is YamlScalarNode scalarNode)
+            {
+                var type = "String";
+                if (int.TryParse(scalarNode.Value, out _)) type = "Integer";
+                else if (bool.TryParse(scalarNode.Value, out _)) type = "Boolean";
+
+                variables.Add(new VariableInfo(prefix,type, scalarNode.Value));
+            }
+        }
+
+
+        public static Dictionary<string, string> ExtractCsVariables()
+        {
+            var variables = new Dictionary<string, string>();
+            var type = typeof(Config);
+
+            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            {
+                ProcessProperty(property.Name, property.PropertyType, variables);
+            }
+            return variables;
+
+        }
+        private static void ProcessProperty(string propertyName, Type propertyType, Dictionary<string, string> variables)
+        {
+            if (!propertyType.IsGenericType)
+            {
+                if (propertyType.IsEnum)
+                {
+                    variables[propertyName] = propertyType.Name;
+                    foreach (var item in propertyType.GetEnumValues())
                     {
-                        foundVariable.Note = NoteMessage.TYPE_MISMATCH;
-                    }
-                    else
-                    {
-                        foundVariable.Note = NoteMessage.OK;
+                        var enumField = propertyType.GetField(item.ToString());
+                        var validatorAttributeData = enumField.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == typeof(ValidatorTypeAttribute));
+
+                        if (validatorAttributeData is null)
+                        {
+                            variables[$"{propertyName}.{item.ToString()}"] = "string";
+                            continue;
+                        }
+
+                        var constructorArguments = validatorAttributeData.ConstructorArguments;
+                        var validatorType = (ValidatorType)constructorArguments[0].Value;
+
+                         variables[$"{propertyName}.{item.ToString()}"] = validatorType.ToString();
                     }
                 }
                 else
                 {
-                    var variable = new Variable(item.Key, NoteMessage.YML_ONLY);
-                    variable.YmlType = item.Value.Type;
-                    combinedVariables.Add(variable);
+                    variables[propertyName] = propertyType.Name;
                 }
-              
+
+                return;
             }
-            return combinedVariables;
+
+            Type genericTypeDefinition = propertyType.GetGenericTypeDefinition();
+            Type[] genericArgs = propertyType.GetGenericArguments();
+            if (genericTypeDefinition == typeof(Dictionary<,>))
+            {
+                Type keyType = genericArgs[0];
+                Type valueType = genericArgs[1];
+                variables[propertyName] = $"Dictionary<{keyType.Name}, {GetInnermostTypeName(valueType)}>";
+                ProcessProperty($"{propertyName}.Key", keyType, variables);
+                ProcessProperty($"{propertyName}.Value", valueType, variables);
+            }
+            else if (genericTypeDefinition == typeof(List<>))
+            {
+                Type itemType = genericArgs[0];
+                variables[propertyName] = $"List<{GetInnermostTypeName(itemType)}>";
+
+                ProcessProperty($"{propertyName}.Item", itemType, variables);
+            }
+            else
+            {
+                variables[propertyName] = propertyType.Name;
+            }
         }
 
-        public static bool isValidatedVariable(List<Variable> variables)
+        private static string GetInnermostTypeName(Type type)
         {
-            foreach(Variable v in variables)
+            while (type.IsGenericType)
             {
-                if(v.Note != NoteMessage.OK) return false;  
+                type = type.GetGenericArguments().First();
             }
-            return true;
+            return type.Name;
         }
+
     }
 }

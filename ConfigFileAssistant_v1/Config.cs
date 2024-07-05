@@ -12,15 +12,13 @@ namespace CalibrationTool
     {
         public Dictionary<string, Dictionary<RobotAttribute, string>> RobotConfigs { get; set; } = new Dictionary<string, Dictionary<RobotAttribute, string>>();
         public Dictionary<string, List<Dictionary<CameraAttribute, string>>> CameraConfigs { get; set; } = new Dictionary<string, List<Dictionary<CameraAttribute, string>>>();
-        public Dictionary<string, List<Dictionary<CameraAttribute, string>>> CameraConfigs2 { get; set; } = new Dictionary<string, List<Dictionary<CameraAttribute, string>>>();
 
         public string Camera { get; set; }
         public string InstallRobot { get; set; }
         public string ScanRobot { get; set; }
         public CalibrationMode Mode { get; set; }
+
         private string _logPath = "./log";
-
-
         public string LogPath
         {
             get

@@ -26,12 +26,8 @@ namespace ConfigFileAssistant_v1
             foreach (var variable in variables1)
             {
                 Debug.WriteLine($"{variable.Key}: {variable.Value}");
-            }
-            Debug.WriteLine("===================YML===================");
-            foreach (var variable in variables2) 
-            {
-                Debug.WriteLine($"{variable.Key}: {variable.Value.Type}");
             }*/
+
         }
     }
 }

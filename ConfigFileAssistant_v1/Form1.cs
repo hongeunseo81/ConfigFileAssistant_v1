@@ -1,21 +1,20 @@
-﻿using CalibrationTool;
+﻿using BrightIdeasSoftware;
+using CalibrationTool;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows.Forms;
 using YamlDotNet.Serialization;
-using DevExpress;
 namespace ConfigFileAssistant_v1
 {
     public partial class MainForm : Form
     {
         private string initFilePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
         private string filePath;
-        
-        private List <Variable> variables = new List<Variable>();
-        private int columnCount;
+
         private Config conf;
         static private ISerializer _serializer = new SerializerBuilder().Build();
+
+
         public MainForm()
         {
             InitializeComponent();
@@ -33,8 +32,8 @@ namespace ConfigFileAssistant_v1
             conf = new Config();
             var csVariables = ConfigValidator.ExtractCsVariables();
             var ymlVariables = ConfigValidator.ExtractYmlVariables(filePath);
-            AddCsVariablesToTreeView(csVariables, treeView1);
-            AddYmlYariablesToDataGridView(ymlVariables, dataGridView1);
+            AddCsVariablesToTreeView(csVariables,treeView);
+            AddYmlYariablesToDataGridView(ymlVariables, dataTreeListView1);
         }
         private static void AddCsVariablesToTreeView(Dictionary<string, string> variables, TreeView treeView)
         {
@@ -78,12 +77,24 @@ namespace ConfigFileAssistant_v1
 
             treeView.EndUpdate();
         }
-        private static void AddYmlYariablesToDataGridView(List<VariableInfo> variables, DataGridView dataGridView)
+        private static void AddYmlYariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
         {
-            dataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dataGridView.ReadOnly = true;
-            dataGridView.DataSource = variables;    
+            objectListView.SetObjects(variables);
+
+            objectListView.CanExpandGetter = x => ((VariableInfo)x).HasChildren();
+            objectListView.ChildrenGetter = x => ((VariableInfo)x).Children;
+
+            objectListView.AllColumns.Add(new OLVColumn("Name", "Name") { AspectName = "Name", Width = 300 });
+            objectListView.AllColumns.Add(new OLVColumn("Type", "Type") { AspectName = "Type", Width = 300 });
+            objectListView.AllColumns.Add(new OLVColumn("Value", "Value") { AspectName = "Value", Width = 300 });
+
+            // 컬럼 활성화
+            objectListView.RebuildColumns();
+
+           
         }
+
+
 
     }
 }

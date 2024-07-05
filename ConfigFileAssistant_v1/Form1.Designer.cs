@@ -28,18 +28,18 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.panel1 = new System.Windows.Forms.Panel();
             this.browseButton = new System.Windows.Forms.Button();
             this.filePathTextBox = new System.Windows.Forms.TextBox();
             this.panel2 = new System.Windows.Forms.Panel();
             this.NEXT = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
-            this.treeView1 = new System.Windows.Forms.TreeView();
-            this.entityInstantFeedbackSource1 = new DevExpress.Data.Linq.EntityInstantFeedbackSource();
-            this.dataGridView1 = new System.Windows.Forms.DataGridView();
+            this.treeView = new System.Windows.Forms.TreeView();
+            this.dataTreeListView1 = new BrightIdeasSoftware.DataTreeListView();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -49,13 +49,13 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1385, 69);
+            this.panel1.Size = new System.Drawing.Size(1673, 69);
             this.panel1.TabIndex = 2;
             // 
             // browseButton
             // 
             this.browseButton.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.browseButton.Location = new System.Drawing.Point(615, 27);
+            this.browseButton.Location = new System.Drawing.Point(759, 27);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(103, 21);
             this.browseButton.TabIndex = 3;
@@ -65,7 +65,7 @@
             // filePathTextBox
             // 
             this.filePathTextBox.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.filePathTextBox.Location = new System.Drawing.Point(15, 27);
+            this.filePathTextBox.Location = new System.Drawing.Point(159, 27);
             this.filePathTextBox.Name = "filePathTextBox";
             this.filePathTextBox.Size = new System.Drawing.Size(594, 21);
             this.filePathTextBox.TabIndex = 4;
@@ -74,16 +74,16 @@
             // 
             this.panel2.Controls.Add(this.NEXT);
             this.panel2.Controls.Add(this.cancelButton);
-            this.panel2.Location = new System.Drawing.Point(0, 709);
+            this.panel2.Location = new System.Drawing.Point(0, 705);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(1391, 79);
+            this.panel2.Size = new System.Drawing.Size(1673, 79);
             this.panel2.TabIndex = 3;
             // 
             // NEXT
             // 
             this.NEXT.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.NEXT.Font = new System.Drawing.Font("Arial Rounded MT Bold", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.NEXT.Location = new System.Drawing.Point(1214, 18);
+            this.NEXT.Location = new System.Drawing.Point(1355, 18);
             this.NEXT.Name = "NEXT";
             this.NEXT.Size = new System.Drawing.Size(137, 36);
             this.NEXT.TabIndex = 6;
@@ -94,38 +94,45 @@
             // 
             this.cancelButton.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.cancelButton.Font = new System.Drawing.Font("Arial Rounded MT Bold", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cancelButton.Location = new System.Drawing.Point(1061, 18);
+            this.cancelButton.Location = new System.Drawing.Point(1202, 18);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(137, 36);
             this.cancelButton.TabIndex = 5;
             this.cancelButton.Text = "CANCEL";
             this.cancelButton.UseVisualStyleBackColor = true;
             // 
-            // treeView1
+            // treeView
             // 
-            this.treeView1.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.treeView1.Location = new System.Drawing.Point(19, 88);
-            this.treeView1.Name = "treeView1";
-            this.treeView1.Size = new System.Drawing.Size(463, 606);
-            this.treeView1.TabIndex = 4;
+            this.treeView.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.treeView.Location = new System.Drawing.Point(19, 88);
+            this.treeView.Name = "treeView";
+            this.treeView.Size = new System.Drawing.Size(463, 606);
+            this.treeView.TabIndex = 4;
             // 
-            // dataGridView1
+            // dataTreeListView1
             // 
-            this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView1.Location = new System.Drawing.Point(523, 94);
-            this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.RowTemplate.Height = 23;
-            this.dataGridView1.Size = new System.Drawing.Size(827, 599);
-            this.dataGridView1.TabIndex = 5;
+            this.dataTreeListView1.CellEditUseWholeCell = false;
+            this.dataTreeListView1.DataSource = null;
+            this.dataTreeListView1.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.dataTreeListView1.HideSelection = false;
+            this.dataTreeListView1.Location = new System.Drawing.Point(561, 88);
+            this.dataTreeListView1.Name = "dataTreeListView1";
+            this.dataTreeListView1.RootKeyValueString = "";
+            this.dataTreeListView1.ShowGroups = false;
+            this.dataTreeListView1.Size = new System.Drawing.Size(1088, 601);
+            this.dataTreeListView1.TabIndex = 5;
+            this.dataTreeListView1.UseCompatibleStateImageBehavior = false;
+            this.dataTreeListView1.View = System.Windows.Forms.View.Details;
+            this.dataTreeListView1.VirtualMode = true;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(1385, 796);
-            this.Controls.Add(this.dataGridView1);
-            this.Controls.Add(this.treeView1);
+            this.ClientSize = new System.Drawing.Size(1673, 796);
+            this.Controls.Add(this.dataTreeListView1);
+            this.Controls.Add(this.treeView);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Name = "MainForm";
@@ -134,7 +141,7 @@
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -147,9 +154,8 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Button NEXT;
         private System.Windows.Forms.Button cancelButton;
-        private System.Windows.Forms.TreeView treeView1;
-        private DevExpress.Data.Linq.EntityInstantFeedbackSource entityInstantFeedbackSource1;
-        private System.Windows.Forms.DataGridView dataGridView1;
+        private System.Windows.Forms.TreeView treeView;
+        private BrightIdeasSoftware.DataTreeListView dataTreeListView1;
     }
 }
 

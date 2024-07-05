@@ -9,40 +9,32 @@ using YamlDotNet.RepresentationModel;
 
 namespace ConfigFileAssistant_v1
 {
-    public enum NoteMessage
-    {
-        CS_ONLY,
-        YML_ONLY,
-        TYPE_MISMATCH,
-        OK
-    }
+   
     public class VariableInfo
     {
         public string Name { get; set; }
         public string Type { get; set; }
         public object Value { get; set; }
+        public List<VariableInfo> Children { get; set; }
+
+        public void AddChild(VariableInfo child)
+        {
+            Children.Add(child);
+        }
 
         public VariableInfo(string name, string type, object value)
         {
             Name = name;
             Type = type;
             Value = value;
+            Children = new List<VariableInfo>();
+        }
+        public bool HasChildren()
+        {
+            return Children.Count > 0;
         }
     }
 
-    public class Variable
-    {
-        public string Name { get; set; }
-        public string CsType { get; set; }
-        public string YmlType { get; set; }
-        public NoteMessage Note { get; set; }
-        public Variable(string name, NoteMessage note) 
-        {
-   
-            Name = name;
-            Note = note;
-        }
-    }
     
     public class ConfigValidator
     {
@@ -66,27 +58,38 @@ namespace ConfigFileAssistant_v1
         {
             if (node is YamlMappingNode mappingNode)
             {
-                variables.Add(new VariableInfo(prefix, "Dictionary", new YamlMappingNode()));
                 foreach (var entry in mappingNode.Children)
                 {
                     var key = ((YamlScalarNode)entry.Key).Value;
                     var newPrefix = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
-                    ExtractYmlVariablesRecursive(entry.Value, variables, newPrefix);
+
+                    if (entry.Value is YamlMappingNode || entry.Value is YamlSequenceNode)
+                    {
+                        var childInfo = new VariableInfo(key, "Dictionary", null);
+                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, newPrefix);
+                        variables.Add(childInfo);
+                    }
+                    else if (entry.Value is YamlScalarNode scalarNode)
+                    {
+                        var type = GetTypeFromScalar(scalarNode);
+                        variables.Add(new VariableInfo(newPrefix, type, scalarNode.Value));
+                    }
                 }
             }
-            
             else if (node is YamlScalarNode scalarNode)
             {
-                var type = "String";
-                if (int.TryParse(scalarNode.Value, out _)) type = "Integer";
-                else if (bool.TryParse(scalarNode.Value, out _)) type = "Boolean";
-
-                variables.Add(new VariableInfo(prefix,type, scalarNode.Value));
+                var type = GetTypeFromScalar(scalarNode);
+                variables.Add(new VariableInfo(prefix, type, scalarNode.Value));
             }
         }
+    private static string GetTypeFromScalar(YamlScalarNode scalarNode)
+    {
+        if (int.TryParse(scalarNode.Value, out _)) return "Integer";
+        if (bool.TryParse(scalarNode.Value, out _)) return "Boolean";
+        return "String";
+    }
 
-
-        public static Dictionary<string, string> ExtractCsVariables()
+    public static Dictionary<string, string> ExtractCsVariables()
         {
             var variables = new Dictionary<string, string>();
             var type = typeof(Config);

@@ -2,9 +2,12 @@
 using CoPick.Setting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Windows.Forms;
+using YamlDotNet.Core.Tokens;
 using YamlDotNet.RepresentationModel;
 
 namespace ConfigFileAssistant_v1
@@ -47,13 +50,11 @@ namespace ConfigFileAssistant_v1
             {
                 yaml.Load(reader);
             }
-
             var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
             ExtractYmlVariablesRecursive(mapping, variables, "");
 
             return variables;
         }
-
         private static void ExtractYmlVariablesRecursive(YamlNode node, List<VariableInfo> variables, string prefix)
         {
             if (node is YamlMappingNode mappingNode)
@@ -61,19 +62,50 @@ namespace ConfigFileAssistant_v1
                 foreach (var entry in mappingNode.Children)
                 {
                     var key = ((YamlScalarNode)entry.Key).Value;
-                    var newPrefix = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
 
-                    if (entry.Value is YamlMappingNode || entry.Value is YamlSequenceNode)
+                    if (entry.Value is YamlMappingNode)
                     {
                         var childInfo = new VariableInfo(key, "Dictionary", null);
-                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, newPrefix);
+                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
+                        variables.Add(childInfo);
+                    }
+                    else if (entry.Value is YamlSequenceNode)
+                    {
+                        var childInfo = new VariableInfo(key, "List", null);
+                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
                         variables.Add(childInfo);
                     }
                     else if (entry.Value is YamlScalarNode scalarNode)
                     {
                         var type = GetTypeFromScalar(scalarNode);
-                        variables.Add(new VariableInfo(newPrefix, type, scalarNode.Value));
+                        variables.Add(new VariableInfo(key, type, scalarNode.Value));
                     }
+                }
+            }
+            else if (node is YamlSequenceNode sequenceNode)
+            {
+                int index = 0;
+                foreach (var childNode in sequenceNode.Children)
+                {
+                    var childPrefix = $"{prefix}[{index}]";
+                    if (childNode is YamlMappingNode)
+                    {
+                        var childInfo = new VariableInfo(childPrefix, "Dictionary", null);
+                        ExtractYmlVariablesRecursive(childNode, childInfo.Children, childPrefix);
+                        variables.Add(childInfo);
+                    }
+                    else if (childNode is YamlSequenceNode)
+                    {
+                        var childInfo = new VariableInfo(childPrefix, "List", null);
+                        ExtractYmlVariablesRecursive(childNode, childInfo.Children, childPrefix);
+                        variables.Add(childInfo);
+                    }
+                    else if (childNode is YamlScalarNode scalarNode)
+                    {
+                        var type = GetTypeFromScalar(scalarNode);
+                        variables.Add(new VariableInfo(childPrefix, type, scalarNode.Value));
+                    }
+                    index++;
                 }
             }
             else if (node is YamlScalarNode scalarNode)
@@ -82,7 +114,7 @@ namespace ConfigFileAssistant_v1
                 variables.Add(new VariableInfo(prefix, type, scalarNode.Value));
             }
         }
-    private static string GetTypeFromScalar(YamlScalarNode scalarNode)
+        private static string GetTypeFromScalar(YamlScalarNode scalarNode)
     {
         if (int.TryParse(scalarNode.Value, out _)) return "Integer";
         if (bool.TryParse(scalarNode.Value, out _)) return "Boolean";

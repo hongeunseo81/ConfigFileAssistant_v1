@@ -2,6 +2,7 @@
 using CalibrationTool;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 using YamlDotNet.Serialization;
 namespace ConfigFileAssistant_v1
@@ -81,6 +82,7 @@ namespace ConfigFileAssistant_v1
         {
             objectListView.SetObjects(variables);
 
+            objectListView.DrawColumnHeader += ObjectListView_DrawColumnHeader;
             objectListView.CanExpandGetter = x => ((VariableInfo)x).HasChildren();
             objectListView.ChildrenGetter = x => ((VariableInfo)x).Children;
 
@@ -88,13 +90,21 @@ namespace ConfigFileAssistant_v1
             objectListView.AllColumns.Add(new OLVColumn("Type", "Type") { AspectName = "Type", Width = 300 });
             objectListView.AllColumns.Add(new OLVColumn("Value", "Value") { AspectName = "Value", Width = 300 });
 
+
             // 컬럼 활성화
             objectListView.RebuildColumns();
 
-           
         }
 
+        private static void ObjectListView_DrawColumnHeader(object sender, DrawListViewColumnHeaderEventArgs e)
+        {
+            using (SolidBrush backBrush = new SolidBrush(Color.LightBlue)) // 헤더 배경색
+            {
+                e.Graphics.FillRectangle(backBrush, e.Bounds);
+            }
 
+            TextRenderer.DrawText(e.Graphics, e.Header.Text, e.Font, e.Bounds, Color.Black, TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
 
+        }
     }
 }

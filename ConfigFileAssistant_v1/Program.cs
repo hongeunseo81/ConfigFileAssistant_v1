@@ -22,12 +22,6 @@ namespace ConfigFileAssistant_v1
             var filepath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
             var variables2 = ConfigValidator.ExtractYmlVariables(filepath);
 
-            /*Debug.WriteLine("====================CS==================");
-            foreach (var variable in variables1)
-            {
-                Debug.WriteLine($"{variable.Key}: {variable.Value}");
-            }*/
-
         }
     }
 }

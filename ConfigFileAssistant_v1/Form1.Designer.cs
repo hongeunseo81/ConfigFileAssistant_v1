@@ -35,11 +35,12 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.NEXT = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
-            this.treeView = new System.Windows.Forms.TreeView();
-            this.dataTreeListView1 = new BrightIdeasSoftware.DataTreeListView();
+            this.ymlDataTreeListView = new BrightIdeasSoftware.DataTreeListView();
+            this.csDataTreeView = new BrightIdeasSoftware.DataTreeListView();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ymlDataTreeListView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.csDataTreeView)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -55,7 +56,7 @@
             // browseButton
             // 
             this.browseButton.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.browseButton.Location = new System.Drawing.Point(636, 27);
+            this.browseButton.Location = new System.Drawing.Point(1862, 26);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(103, 21);
             this.browseButton.TabIndex = 3;
@@ -65,7 +66,7 @@
             // filePathTextBox
             // 
             this.filePathTextBox.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.filePathTextBox.Location = new System.Drawing.Point(19, 28);
+            this.filePathTextBox.Location = new System.Drawing.Point(1262, 26);
             this.filePathTextBox.Name = "filePathTextBox";
             this.filePathTextBox.Size = new System.Drawing.Size(594, 21);
             this.filePathTextBox.TabIndex = 4;
@@ -101,34 +102,42 @@
             this.cancelButton.Text = "CANCEL";
             this.cancelButton.UseVisualStyleBackColor = true;
             // 
-            // treeView
+            // ymlDataTreeListView
             // 
-            this.treeView.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.treeView.Location = new System.Drawing.Point(19, 88);
-            this.treeView.Name = "treeView";
-            this.treeView.Size = new System.Drawing.Size(656, 877);
-            this.treeView.TabIndex = 4;
+            this.ymlDataTreeListView.CellEditUseWholeCell = false;
+            this.ymlDataTreeListView.DataSource = null;
+            this.ymlDataTreeListView.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ymlDataTreeListView.FullRowSelect = true;
+            this.ymlDataTreeListView.GridLines = true;
+            this.ymlDataTreeListView.HeaderUsesThemes = true;
+            this.ymlDataTreeListView.HeaderWordWrap = true;
+            this.ymlDataTreeListView.HideSelection = false;
+            this.ymlDataTreeListView.Location = new System.Drawing.Point(877, 88);
+            this.ymlDataTreeListView.Name = "ymlDataTreeListView";
+            this.ymlDataTreeListView.RootKeyValueString = "";
+            this.ymlDataTreeListView.ShowGroups = false;
+            this.ymlDataTreeListView.Size = new System.Drawing.Size(1088, 877);
+            this.ymlDataTreeListView.TabIndex = 5;
+            this.ymlDataTreeListView.UseCompatibleStateImageBehavior = false;
+            this.ymlDataTreeListView.UseFiltering = true;
+            this.ymlDataTreeListView.View = System.Windows.Forms.View.Details;
+            this.ymlDataTreeListView.VirtualMode = true;
             // 
-            // dataTreeListView1
+            // csDataTreeView
             // 
-            this.dataTreeListView1.CellEditUseWholeCell = false;
-            this.dataTreeListView1.DataSource = null;
-            this.dataTreeListView1.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.dataTreeListView1.FullRowSelect = true;
-            this.dataTreeListView1.GridLines = true;
-            this.dataTreeListView1.HeaderUsesThemes = true;
-            this.dataTreeListView1.HeaderWordWrap = true;
-            this.dataTreeListView1.HideSelection = false;
-            this.dataTreeListView1.Location = new System.Drawing.Point(877, 88);
-            this.dataTreeListView1.Name = "dataTreeListView1";
-            this.dataTreeListView1.RootKeyValueString = "";
-            this.dataTreeListView1.ShowGroups = false;
-            this.dataTreeListView1.Size = new System.Drawing.Size(1088, 877);
-            this.dataTreeListView1.TabIndex = 5;
-            this.dataTreeListView1.UseCompatibleStateImageBehavior = false;
-            this.dataTreeListView1.UseFiltering = true;
-            this.dataTreeListView1.View = System.Windows.Forms.View.Details;
-            this.dataTreeListView1.VirtualMode = true;
+            this.csDataTreeView.CellEditUseWholeCell = false;
+            this.csDataTreeView.DataSource = null;
+            this.csDataTreeView.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.csDataTreeView.HideSelection = false;
+            this.csDataTreeView.Location = new System.Drawing.Point(14, 87);
+            this.csDataTreeView.Name = "csDataTreeView";
+            this.csDataTreeView.RootKeyValueString = "";
+            this.csDataTreeView.ShowGroups = false;
+            this.csDataTreeView.Size = new System.Drawing.Size(825, 877);
+            this.csDataTreeView.TabIndex = 6;
+            this.csDataTreeView.UseCompatibleStateImageBehavior = false;
+            this.csDataTreeView.View = System.Windows.Forms.View.Details;
+            this.csDataTreeView.VirtualMode = true;
             // 
             // MainForm
             // 
@@ -136,8 +145,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
             this.ClientSize = new System.Drawing.Size(1991, 1062);
-            this.Controls.Add(this.dataTreeListView1);
-            this.Controls.Add(this.treeView);
+            this.Controls.Add(this.csDataTreeView);
+            this.Controls.Add(this.ymlDataTreeListView);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Name = "MainForm";
@@ -146,7 +155,8 @@
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.ymlDataTreeListView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.csDataTreeView)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -159,8 +169,8 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Button NEXT;
         private System.Windows.Forms.Button cancelButton;
-        private System.Windows.Forms.TreeView treeView;
-        private BrightIdeasSoftware.DataTreeListView dataTreeListView1;
+        private BrightIdeasSoftware.DataTreeListView ymlDataTreeListView;
+        private BrightIdeasSoftware.DataTreeListView csDataTreeView;
     }
 }
 

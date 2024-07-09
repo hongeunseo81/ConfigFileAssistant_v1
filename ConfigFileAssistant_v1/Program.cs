@@ -19,8 +19,7 @@ namespace ConfigFileAssistant_v1
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
             var variables1 = ConfigValidator.ExtractCsVariables();
-            var filepath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
-            var variables2 = ConfigValidator.ExtractYmlVariables(filepath);
+            
 
         }
     }

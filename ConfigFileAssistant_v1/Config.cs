@@ -4,6 +4,7 @@ using System.IO;
 
 using CoPick.Logging;
 using CoPick.Robot;
+
 using CoPick.Setting;
 
 namespace CalibrationTool

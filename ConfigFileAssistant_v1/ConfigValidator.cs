@@ -1,5 +1,6 @@
 ﻿using CalibrationTool;
 using CoPick.Setting;
+using ScintillaNET;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,25 +13,29 @@ using YamlDotNet.RepresentationModel;
 
 namespace ConfigFileAssistant_v1
 {
-   
+
     public class VariableInfo
     {
         public string Name { get; set; }
-        public string Type { get; set; }
+        public Type Type { get; set; }
+        public string TypeName { get; set; }
         public object Value { get; set; }
         public List<VariableInfo> Children { get; set; }
-
+        public Note Note { get; set; }
+        
         public void AddChild(VariableInfo child)
         {
+            
             Children.Add(child);
         }
 
-        public VariableInfo(string name, string type, object value)
+        public VariableInfo(string name, Type type, object value)
         {
             Name = name;
             Type = type;
-            Value = value;
+            TypeName = type.Name;
             Children = new List<VariableInfo>();
+            Value = value;
         }
         public bool HasChildren()
         {
@@ -38,7 +43,14 @@ namespace ConfigFileAssistant_v1
         }
     }
 
-    
+    public enum Note 
+    { 
+        OK,
+        CS_ONLY,
+        YML_ONLY,
+        TYPE_MISMATCH
+    }
+
     public class ConfigValidator
     {
         public static List<VariableInfo> ExtractYmlVariables(string filePath)
@@ -65,13 +77,13 @@ namespace ConfigFileAssistant_v1
 
                     if (entry.Value is YamlMappingNode)
                     {
-                        var childInfo = new VariableInfo(key, "Dictionary", null);
+                        var childInfo = new VariableInfo(key, typeof(Dictionary<,>), null);
                         ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
                         variables.Add(childInfo);
                     }
                     else if (entry.Value is YamlSequenceNode)
                     {
-                        var childInfo = new VariableInfo(key, "List", null);
+                        var childInfo = new VariableInfo(key,typeof(List<>), null);
                         ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
                         variables.Add(childInfo);
                     }
@@ -90,13 +102,13 @@ namespace ConfigFileAssistant_v1
                     var childPrefix = $"{prefix}[{index}]";
                     if (childNode is YamlMappingNode)
                     {
-                        var childInfo = new VariableInfo(childPrefix, "Dictionary", null);
+                        var childInfo = new VariableInfo(childPrefix, typeof(Dictionary<,>), null);
                         ExtractYmlVariablesRecursive(childNode, childInfo.Children, childPrefix);
                         variables.Add(childInfo);
                     }
                     else if (childNode is YamlSequenceNode)
                     {
-                        var childInfo = new VariableInfo(childPrefix, "List", null);
+                        var childInfo = new VariableInfo(childPrefix, typeof(Dictionary<,>), null);
                         ExtractYmlVariablesRecursive(childNode, childInfo.Children, childPrefix);
                         variables.Add(childInfo);
                     }
@@ -114,88 +126,73 @@ namespace ConfigFileAssistant_v1
                 variables.Add(new VariableInfo(prefix, type, scalarNode.Value));
             }
         }
-        private static string GetTypeFromScalar(YamlScalarNode scalarNode)
-    {
-        if (int.TryParse(scalarNode.Value, out _)) return "Integer";
-        if (bool.TryParse(scalarNode.Value, out _)) return "Boolean";
-        return "String";
-    }
-
-    public static Dictionary<string, string> ExtractCsVariables()
+        private static Type GetTypeFromScalar(YamlScalarNode scalarNode)
         {
-            var variables = new Dictionary<string, string>();
+            if (int.TryParse(scalarNode.Value, out _)) return typeof(int);
+            if (bool.TryParse(scalarNode.Value, out _)) return typeof(bool);
+            return typeof(string);
+        }
+
+        public static List<VariableInfo> ExtractCsVariables()
+        {
+            var variables = new List<VariableInfo>();
             var type = typeof(Config);
 
             foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                ProcessProperty(property.Name, property.PropertyType, variables);
+                ProcessProperty(property.Name, property.PropertyType, null, variables);
             }
             return variables;
-
         }
-        private static void ProcessProperty(string propertyName, Type propertyType, Dictionary<string, string> variables)
+
+        private static void ProcessProperty(string propertyName, Type propertyType, object value, List<VariableInfo> variables)
         {
+            var variableInfo = new VariableInfo(propertyName, propertyType, value);
+
             if (!propertyType.IsGenericType)
             {
                 if (propertyType.IsEnum)
                 {
-                    variables[propertyName] = propertyType.Name;
                     foreach (var item in propertyType.GetEnumValues())
                     {
                         var enumField = propertyType.GetField(item.ToString());
                         var validatorAttributeData = enumField.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == typeof(ValidatorTypeAttribute));
 
-                        if (validatorAttributeData is null)
+                        if (validatorAttributeData == null)
                         {
-                            variables[$"{propertyName}.{item.ToString()}"] = "string";
+                            variableInfo.Children.Add(new VariableInfo(enumField.Name, typeof(string), item));
                             continue;
                         }
 
                         var constructorArguments = validatorAttributeData.ConstructorArguments;
                         var validatorType = (ValidatorType)constructorArguments[0].Value;
 
-                         variables[$"{propertyName}.{item.ToString()}"] = validatorType.ToString();
+                        variableInfo.Children.Add(new VariableInfo(enumField.Name, typeof(string), validatorType.ToString()));
                     }
                 }
-                else
-                {
-                    variables[propertyName] = propertyType.Name;
-                }
-
+                variables.Add(variableInfo);
                 return;
             }
 
             Type genericTypeDefinition = propertyType.GetGenericTypeDefinition();
             Type[] genericArgs = propertyType.GetGenericArguments();
+
             if (genericTypeDefinition == typeof(Dictionary<,>))
             {
                 Type keyType = genericArgs[0];
                 Type valueType = genericArgs[1];
-                variables[propertyName] = $"Dictionary<{keyType.Name}, {GetInnermostTypeName(valueType)}>";
-                ProcessProperty($"{propertyName}.Key", keyType, variables);
-                ProcessProperty($"{propertyName}.Value", valueType, variables);
+                variableInfo.Children.Add(new VariableInfo("Key", keyType, null));
+                ProcessProperty("Value", valueType, null, variableInfo.Children);
             }
             else if (genericTypeDefinition == typeof(List<>))
             {
                 Type itemType = genericArgs[0];
-                variables[propertyName] = $"List<{GetInnermostTypeName(itemType)}>";
+                ProcessProperty("Item", itemType, null, variableInfo.Children);
+            }
 
-                ProcessProperty($"{propertyName}.Item", itemType, variables);
-            }
-            else
-            {
-                variables[propertyName] = propertyType.Name;
-            }
+            variables.Add(variableInfo);
         }
 
-        private static string GetInnermostTypeName(Type type)
-        {
-            while (type.IsGenericType)
-            {
-                type = type.GetGenericArguments().First();
-            }
-            return type.Name;
-        }
-
+        
     }
 }

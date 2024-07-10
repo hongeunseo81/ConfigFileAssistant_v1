@@ -15,10 +15,14 @@ namespace ConfigFileAssistant_v1
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
+           Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
-            var variables1 = ConfigValidator.ExtractCsVariables();
+
+            var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
+            var csVariables = ConfigValidator.ExtractCsVariables();
+            var ymlVariables = ConfigValidator.ExtractYmlVariables(filePath);
+            //ConfigValidator.CompareVariables(csVariables, ymlVariables);
             
 
         }

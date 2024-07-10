@@ -20,8 +20,8 @@ namespace ConfigFileAssistant_v1
         public Type Type { get; set; }
         public string TypeName { get; set; }
         public object Value { get; set; }
-        public List<VariableInfo> Children { get; set; }
         public Note Note { get; set; }
+        public List<VariableInfo> Children { get; set; }
         
         public void AddChild(VariableInfo child)
         {
@@ -36,6 +36,7 @@ namespace ConfigFileAssistant_v1
             TypeName = type.Name;
             Children = new List<VariableInfo>();
             Value = value;
+            Note = Note.OK;
         }
         public bool HasChildren()
         {
@@ -46,8 +47,9 @@ namespace ConfigFileAssistant_v1
     public enum Note 
     { 
         OK,
-        CS_ONLY,
-        YML_ONLY,
+        ERROR,
+        ONLY_IN_CS,
+        ONLY_IN_YML,
         TYPE_MISMATCH
     }
 
@@ -83,13 +85,14 @@ namespace ConfigFileAssistant_v1
                     }
                     else if (entry.Value is YamlSequenceNode)
                     {
-                        var childInfo = new VariableInfo(key,typeof(List<>), null);
+                        var childInfo = new VariableInfo(key, typeof(List<>), null);
                         ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
                         variables.Add(childInfo);
                     }
                     else if (entry.Value is YamlScalarNode scalarNode)
                     {
-                        var type = GetTypeFromScalar(scalarNode);
+                        // var type = GetTypeFromScalar(scalarNode);
+                        var type = typeof(string);
                         variables.Add(new VariableInfo(key, type, scalarNode.Value));
                     }
                 }
@@ -153,6 +156,8 @@ namespace ConfigFileAssistant_v1
             {
                 if (propertyType.IsEnum)
                 {
+
+                    Debug.WriteLine(propertyName);
                     foreach (var item in propertyType.GetEnumValues())
                     {
                         var enumField = propertyType.GetField(item.ToString());
@@ -181,18 +186,108 @@ namespace ConfigFileAssistant_v1
             {
                 Type keyType = genericArgs[0];
                 Type valueType = genericArgs[1];
-                variableInfo.Children.Add(new VariableInfo("Key", keyType, null));
+
+                ProcessProperty("Key", keyType, null, variableInfo.Children);
                 ProcessProperty("Value", valueType, null, variableInfo.Children);
+
             }
             else if (genericTypeDefinition == typeof(List<>))
             {
                 Type itemType = genericArgs[0];
                 ProcessProperty("Item", itemType, null, variableInfo.Children);
             }
-
             variables.Add(variableInfo);
         }
+        public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
+        {
+            var ymlVariableDict = ymlVariables.ToDictionary(v => v.Name);
 
-        
+            foreach (var csVariable in csVariables)
+            {
+                if (ymlVariableDict.TryGetValue(csVariable.Name, out var ymlVariable))
+                {
+                    CompareChild(csVariable, ymlVariable,null);
+
+                    if (ymlVariable.Children.Any(child => child.Note != Note.OK))
+                    {
+                        if(ymlVariable.Children.First(child => child.Note != Note.OK)!=null)
+                        {
+
+                            ymlVariable.Note = Note.ERROR;
+                        }
+                    }
+                }
+                else
+                {
+                    var variable = new VariableInfo(csVariable.Name, csVariable.Type, null);
+                    variable.Note = Note.ONLY_IN_CS;
+                    ymlVariables.Add(variable);
+                }
+            }
+
+            foreach (var ymlVariable in ymlVariables)
+            {
+                if (!csVariables.Any(v => v.Name == ymlVariable.Name))
+                {
+                    ymlVariable.Note = Note.ONLY_IN_YML;
+                }
+            }
+            return ymlVariables;
+        }
+        private static void CompareChild(VariableInfo csVariable, VariableInfo ymlVariable, VariableInfo csParentVariable)
+        {
+
+            if (csVariable.HasChildren() && ymlVariable.HasChildren())
+            {
+                foreach (var child in ymlVariable.Children)
+                {
+                    CompareChild(csVariable.Children.Last(), child, csVariable);
+                    if (child.Note != Note.OK)
+                    {
+                        ymlVariable.Note = Note.ERROR;
+                    }
+                }
+               
+            }
+            else if (csVariable.HasChildren() && !ymlVariable.HasChildren())
+            {
+                ymlVariable.Note = Note.ONLY_IN_YML;
+                if (csVariable.Type.IsEnum)
+                {
+                    foreach (var item in csVariable.Children)
+                    {
+                        if (ymlVariable.Value.ToString().Equals(item.Name))
+                        {
+                            ymlVariable.Note = Note.OK;
+                            break;
+                        }
+                    }
+                }
+
+            }
+            else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
+            {
+                var ymlLastChild = ymlVariable.Children.Last();
+                ymlLastChild.Note = Note.ONLY_IN_YML;
+                ymlVariable.Note = Note.ONLY_IN_YML;
+            }
+            else
+            {
+                if (csParentVariable != null) 
+                {
+                    ymlVariable.Note = Note.ONLY_IN_YML;
+                    var variable = csParentVariable.Children.First();
+                    foreach(var v in variable.Children)
+                    {
+                        if(ymlVariable.Name.Equals(v.Name))
+                        {
+
+                            ymlVariable.Note = Note.OK;
+                        }
+                    }
+                }
+            }
+           
+        }
     }
 }

@@ -16,6 +16,9 @@ namespace CalibrationTool
 
         public string Camera { get; set; }
         public string InstallRobot { get; set; }
+
+
+
         public string ScanRobot { get; set; }
         public CalibrationMode Mode { get; set; }
 

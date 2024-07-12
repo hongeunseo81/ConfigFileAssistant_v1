@@ -33,15 +33,17 @@
             this.browseButton = new System.Windows.Forms.Button();
             this.filePathTextBox = new System.Windows.Forms.TextBox();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.nextButton = new System.Windows.Forms.Button();
+            this.cancelButton = new System.Windows.Forms.Button();
             this.ymlDataTreeListView = new BrightIdeasSoftware.DataTreeListView();
             this.expandAllButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
-            this.nextButton = new System.Windows.Forms.Button();
             this.treeModeRadioButton = new System.Windows.Forms.RadioButton();
             this.editModeRadioButton = new System.Windows.Forms.RadioButton();
+            this.dataTreeListView1 = new BrightIdeasSoftware.DataTreeListView();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ymlDataTreeListView)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -51,14 +53,14 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(918, 69);
+            this.panel1.Size = new System.Drawing.Size(1726, 69);
             this.panel1.TabIndex = 2;
             // 
             // browseButton
             // 
             this.browseButton.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.browseButton.Font = new System.Drawing.Font("Arial Narrow", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.browseButton.Location = new System.Drawing.Point(725, 25);
+            this.browseButton.Location = new System.Drawing.Point(1129, 25);
             this.browseButton.Name = "browseButton";
             this.browseButton.Size = new System.Drawing.Size(103, 29);
             this.browseButton.TabIndex = 3;
@@ -69,7 +71,7 @@
             // 
             this.filePathTextBox.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.filePathTextBox.Font = new System.Drawing.Font("굴림", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.filePathTextBox.Location = new System.Drawing.Point(85, 30);
+            this.filePathTextBox.Location = new System.Drawing.Point(489, 30);
             this.filePathTextBox.Name = "filePathTextBox";
             this.filePathTextBox.Size = new System.Drawing.Size(618, 22);
             this.filePathTextBox.TabIndex = 4;
@@ -80,8 +82,28 @@
             this.panel2.Controls.Add(this.cancelButton);
             this.panel2.Location = new System.Drawing.Point(0, 894);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(1413, 93);
+            this.panel2.Size = new System.Drawing.Size(921, 93);
             this.panel2.TabIndex = 3;
+            // 
+            // nextButton
+            // 
+            this.nextButton.Location = new System.Drawing.Point(744, 24);
+            this.nextButton.Name = "nextButton";
+            this.nextButton.Size = new System.Drawing.Size(134, 46);
+            this.nextButton.TabIndex = 1;
+            this.nextButton.Text = "NEXT";
+            this.nextButton.UseVisualStyleBackColor = true;
+            this.nextButton.Click += new System.EventHandler(this.nextButton_Click);
+            // 
+            // cancelButton
+            // 
+            this.cancelButton.Location = new System.Drawing.Point(604, 24);
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Size = new System.Drawing.Size(134, 46);
+            this.cancelButton.TabIndex = 0;
+            this.cancelButton.Text = "CANCEL";
+            this.cancelButton.UseVisualStyleBackColor = true;
+            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
             // 
             // ymlDataTreeListView
             // 
@@ -99,7 +121,7 @@
             this.ymlDataTreeListView.OwnerDrawnHeader = true;
             this.ymlDataTreeListView.RootKeyValueString = "";
             this.ymlDataTreeListView.ShowGroups = false;
-            this.ymlDataTreeListView.Size = new System.Drawing.Size(865, 681);
+            this.ymlDataTreeListView.Size = new System.Drawing.Size(851, 681);
             this.ymlDataTreeListView.TabIndex = 5;
             this.ymlDataTreeListView.UseCompatibleStateImageBehavior = false;
             this.ymlDataTreeListView.UseFiltering = true;
@@ -115,32 +137,13 @@
             this.expandAllButton.UseVisualStyleBackColor = true;
             this.expandAllButton.Click += new System.EventHandler(this.expandAllButton_Click);
             // 
-            // cancelButton
-            // 
-            this.cancelButton.Location = new System.Drawing.Point(605, 24);
-            this.cancelButton.Name = "cancelButton";
-            this.cancelButton.Size = new System.Drawing.Size(134, 46);
-            this.cancelButton.TabIndex = 0;
-            this.cancelButton.Text = "CANCEL";
-            this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
-            // 
-            // nextButton
-            // 
-            this.nextButton.Location = new System.Drawing.Point(758, 24);
-            this.nextButton.Name = "nextButton";
-            this.nextButton.Size = new System.Drawing.Size(134, 46);
-            this.nextButton.TabIndex = 1;
-            this.nextButton.Text = "NEXT";
-            this.nextButton.UseVisualStyleBackColor = true;
-            this.nextButton.Click += new System.EventHandler(this.nextButton_Click);
-            // 
             // treeModeRadioButton
             // 
             this.treeModeRadioButton.AutoSize = true;
-            this.treeModeRadioButton.Location = new System.Drawing.Point(725, 141);
+            this.treeModeRadioButton.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.treeModeRadioButton.Location = new System.Drawing.Point(661, 137);
             this.treeModeRadioButton.Name = "treeModeRadioButton";
-            this.treeModeRadioButton.Size = new System.Drawing.Size(80, 16);
+            this.treeModeRadioButton.Size = new System.Drawing.Size(99, 20);
             this.treeModeRadioButton.TabIndex = 7;
             this.treeModeRadioButton.TabStop = true;
             this.treeModeRadioButton.Text = "tree mode";
@@ -149,20 +152,45 @@
             // editModeRadioButton
             // 
             this.editModeRadioButton.AutoSize = true;
-            this.editModeRadioButton.Location = new System.Drawing.Point(813, 141);
+            this.editModeRadioButton.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.editModeRadioButton.Location = new System.Drawing.Point(777, 137);
             this.editModeRadioButton.Name = "editModeRadioButton";
-            this.editModeRadioButton.Size = new System.Drawing.Size(79, 16);
+            this.editModeRadioButton.Size = new System.Drawing.Size(97, 20);
             this.editModeRadioButton.TabIndex = 8;
             this.editModeRadioButton.TabStop = true;
             this.editModeRadioButton.Text = "edit mode";
             this.editModeRadioButton.UseVisualStyleBackColor = true;
+            // 
+            // dataTreeListView1
+            // 
+            this.dataTreeListView1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.dataTreeListView1.CellEditUseWholeCell = false;
+            this.dataTreeListView1.DataSource = null;
+            this.dataTreeListView1.Font = new System.Drawing.Font("굴림", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.dataTreeListView1.FullRowSelect = true;
+            this.dataTreeListView1.GridLines = true;
+            this.dataTreeListView1.HeaderUsesThemes = true;
+            this.dataTreeListView1.HeaderWordWrap = true;
+            this.dataTreeListView1.HideSelection = false;
+            this.dataTreeListView1.Location = new System.Drawing.Point(898, 163);
+            this.dataTreeListView1.Name = "dataTreeListView1";
+            this.dataTreeListView1.OwnerDrawnHeader = true;
+            this.dataTreeListView1.RootKeyValueString = "";
+            this.dataTreeListView1.ShowGroups = false;
+            this.dataTreeListView1.Size = new System.Drawing.Size(796, 681);
+            this.dataTreeListView1.TabIndex = 9;
+            this.dataTreeListView1.UseCompatibleStateImageBehavior = false;
+            this.dataTreeListView1.UseFiltering = true;
+            this.dataTreeListView1.View = System.Windows.Forms.View.Details;
+            this.dataTreeListView1.VirtualMode = true;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(918, 986);
+            this.ClientSize = new System.Drawing.Size(1726, 986);
+            this.Controls.Add(this.dataTreeListView1);
             this.Controls.Add(this.editModeRadioButton);
             this.Controls.Add(this.treeModeRadioButton);
             this.Controls.Add(this.expandAllButton);
@@ -176,6 +204,7 @@
             this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.ymlDataTreeListView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -193,6 +222,7 @@
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.RadioButton treeModeRadioButton;
         private System.Windows.Forms.RadioButton editModeRadioButton;
+        private BrightIdeasSoftware.DataTreeListView dataTreeListView1;
     }
 }
 

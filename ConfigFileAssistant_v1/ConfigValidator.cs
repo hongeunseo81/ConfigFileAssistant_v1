@@ -2,6 +2,7 @@
 using CoPick.Setting;
 using ScintillaNET;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -9,8 +10,11 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using YamlDotNet.Core.Tokens;
 using YamlDotNet.RepresentationModel;
 
@@ -19,6 +23,7 @@ namespace ConfigFileAssistant_v1
     public class VariableInfo
     {
         public string Name { get; set; }
+        public string FullName { get; set; }
         public Type Type { get; set; }
         public string TypeName { get; set; }
         public object Value { get; set; }
@@ -33,9 +38,20 @@ namespace ConfigFileAssistant_v1
 
         public VariableInfo(string name, Type type, object value)
         {
-            Name = name;
+            FullName = name;
+            Name = FullName.Split('.').Last();
             Type = type;
             TypeName = type.Name;
+            Children = new List<VariableInfo>();
+            Value = value;
+            Result = Result.OK;
+        }
+        public VariableInfo(string name, string typeName, object value)
+        {
+            FullName = name;
+            Name = FullName.Split('.').Last();
+            Type = typeof(string);
+            TypeName = typeName;
             Children = new List<VariableInfo>();
             Value = value;
             Result = Result.OK;
@@ -45,23 +61,7 @@ namespace ConfigFileAssistant_v1
             return Children.Count > 0;
         }
     }
-    public class UpdateLog
-    {
-        public StringBuilder Message { get; set; }
-        public DateTime CreatedAt { get; set; }
-
-        public UpdateLog() 
-        { 
-            CreatedAt = DateTime.Now;
-            Message = new StringBuilder();
-            Message.Append(CreatedAt).Append("\n\n");
-        }
-        public void AddMessage(string message)
-        {
-            Message.Append(message);
-        }
-    }
-
+    
     public enum Result 
     { 
         OK,
@@ -73,8 +73,8 @@ namespace ConfigFileAssistant_v1
 
     public class ConfigValidator
     {
-
         public static Object instance;
+        public static Dictionary<string, Result> errorVariableNames;
         public static List<VariableInfo> ExtractYmlVariables(string filePath)
         {
             var variables = new List<VariableInfo>();
@@ -84,13 +84,14 @@ namespace ConfigFileAssistant_v1
             {
                 yaml.Load(reader);
             }
-            if(yaml.Documents.Count != 0)
+            if (yaml.Documents.Count != 0)
             {
                 var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
                 ExtractYmlVariablesRecursive(mapping, variables, "");
             }
             return variables;
         }
+
         private static void ExtractYmlVariablesRecursive(YamlNode node, List<VariableInfo> variables, string prefix)
         {
             if (node is YamlMappingNode mappingNode)
@@ -98,24 +99,24 @@ namespace ConfigFileAssistant_v1
                 foreach (var entry in mappingNode.Children)
                 {
                     var key = ((YamlScalarNode)entry.Key).Value;
+                    var fullName = string.IsNullOrEmpty(prefix) ? key : $"{prefix}.{key}";
 
                     if (entry.Value is YamlMappingNode)
                     {
-                        var childInfo = new VariableInfo(key, typeof(Dictionary<,>), null);
-                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
+                        var childInfo = new VariableInfo(fullName, typeof(Dictionary<,>), null);
+                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, fullName);
                         variables.Add(childInfo);
                     }
                     else if (entry.Value is YamlSequenceNode)
                     {
-                        var childInfo = new VariableInfo(key, typeof(List<>), null);
-                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, key);
+                        var childInfo = new VariableInfo(fullName, typeof(List<>), null);
+                        ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, fullName);
                         variables.Add(childInfo);
                     }
                     else if (entry.Value is YamlScalarNode scalarNode)
                     {
-                        // var type = GetTypeFromScalar(scalarNode);
                         var type = typeof(string);
-                        variables.Add(new VariableInfo(key, type, scalarNode.Value));
+                        variables.Add(new VariableInfo(fullName, type, scalarNode.Value));
                     }
                 }
             }
@@ -125,6 +126,7 @@ namespace ConfigFileAssistant_v1
                 foreach (var childNode in sequenceNode.Children)
                 {
                     var childPrefix = $"{prefix}[{index}]";
+
                     if (childNode is YamlMappingNode)
                     {
                         var childInfo = new VariableInfo(childPrefix, typeof(Dictionary<,>), null);
@@ -133,29 +135,21 @@ namespace ConfigFileAssistant_v1
                     }
                     else if (childNode is YamlSequenceNode)
                     {
-                        var childInfo = new VariableInfo(childPrefix, typeof(Dictionary<,>), null);
+                        var childInfo = new VariableInfo(childPrefix, typeof(List<>), null);
                         ExtractYmlVariablesRecursive(childNode, childInfo.Children, childPrefix);
                         variables.Add(childInfo);
                     }
                     else if (childNode is YamlScalarNode scalarNode)
                     {
-                        var type = GetTypeFromScalar(scalarNode);
-                        variables.Add(new VariableInfo(childPrefix, type, scalarNode.Value));
+                        variables.Add(new VariableInfo(childPrefix, typeof(string), scalarNode.Value));
                     }
                     index++;
                 }
             }
             else if (node is YamlScalarNode scalarNode)
             {
-                var type = GetTypeFromScalar(scalarNode);
-                variables.Add(new VariableInfo(prefix, type, scalarNode.Value));
+                variables.Add(new VariableInfo(prefix, typeof(string), scalarNode.Value));
             }
-        }
-        private static Type GetTypeFromScalar(YamlScalarNode scalarNode)
-        {
-            if (int.TryParse(scalarNode.Value, out _)) return typeof(int);
-            if (bool.TryParse(scalarNode.Value, out _)) return typeof(bool);
-            return typeof(string);
         }
 
         public static List<VariableInfo> ExtractCsVariables()
@@ -174,9 +168,10 @@ namespace ConfigFileAssistant_v1
         
         private static void ProcessProperty(string propertyName, Type propertyType, Object value,List<VariableInfo> variables)
         {
-            VariableInfo variableInfo = new VariableInfo(propertyName, propertyType, value);
+            VariableInfo variableInfo; 
             if (!propertyType.IsGenericType)
             {
+                variableInfo = new VariableInfo(propertyName, propertyType, value);
                 if (propertyType.IsEnum)
                 {
                     foreach (var item in propertyType.GetEnumValues())
@@ -186,14 +181,14 @@ namespace ConfigFileAssistant_v1
 
                         if (validatorAttributeData == null)
                         {
-                            variableInfo.Children.Add(new VariableInfo(enumField.Name, typeof(string), item));
+                            variableInfo.Children.Add(new VariableInfo(enumField.Name, item.ToString(), ""));
                             continue;
                         }
 
                         var constructorArguments = validatorAttributeData.ConstructorArguments;
                         var validatorType = (ValidatorType)constructorArguments[0].Value;
 
-                        variableInfo.Children.Add(new VariableInfo(enumField.Name, typeof(string), validatorType.ToString()));
+                        variableInfo.Children.Add(new VariableInfo(enumField.Name, validatorType.ToString(),""));
                     }
                 }
                 variables.Add(variableInfo);
@@ -202,20 +197,20 @@ namespace ConfigFileAssistant_v1
 
             Type genericTypeDefinition = propertyType.GetGenericTypeDefinition();
             Type[] genericArgs = propertyType.GetGenericArguments();
-
+            variableInfo = new VariableInfo(propertyName, propertyType, null);
             if (genericTypeDefinition == typeof(Dictionary<,>))
             {
                 Type keyType = genericArgs[0];
                 Type valueType = genericArgs[1];
 
-                ProcessProperty("Key", keyType,"", variableInfo.Children);
-                ProcessProperty("Value", valueType,"", variableInfo.Children);
+                ProcessProperty($"{propertyName}.Key", keyType,"", variableInfo.Children);
+                ProcessProperty($"{propertyName}.Value", valueType,"", variableInfo.Children);
 
             }
             else if (genericTypeDefinition == typeof(List<>))
             {
                 Type itemType = genericArgs[0];
-                ProcessProperty("Item", itemType, "", variableInfo.Children);
+                ProcessProperty($"{propertyName}.Item", itemType, "", variableInfo.Children);
             }
             variables.Add(variableInfo);
         }
@@ -240,6 +235,7 @@ namespace ConfigFileAssistant_v1
         }
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
+            errorVariableNames = new Dictionary<string,Result>();
             var ymlVariableDict = ymlVariables.ToDictionary(v => v.Name);
 
             foreach (var csVariable in csVariables)
@@ -249,6 +245,8 @@ namespace ConfigFileAssistant_v1
                     if((csVariable.Type.IsGenericType || ymlVariable.Type.IsGenericType) && !csVariable.TypeName.Equals(ymlVariable.TypeName))
                     {
                         ymlVariable.Result = Result.TYPE_MISMATCH;
+                        errorVariableNames[ymlVariable.FullName] = ymlVariable.Result; 
+                        
                     }
                     else
                     {
@@ -260,6 +258,7 @@ namespace ConfigFileAssistant_v1
                     var variable = new VariableInfo(csVariable.Name, csVariable.Type, csVariable.Value);
                     variable.Result = Result.ONLY_IN_CS;
                     ymlVariables.Add(variable);
+                    errorVariableNames[variable.FullName] = variable.Result;
                 }
             }
 
@@ -267,7 +266,10 @@ namespace ConfigFileAssistant_v1
             {
                 if (!csVariables.Any(v => v.Name == ymlVariable.Name))
                 {
-                    ymlVariable.Result = Result.ONLY_IN_YML;
+                    ymlVariable.Result = Result.ONLY_IN_YML; 
+                    Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
+                    errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
+                   
                 }
             }
             return ymlVariables;
@@ -299,14 +301,26 @@ namespace ConfigFileAssistant_v1
                             break;
                         }
                     }
+                    if(ymlVariable.Result == Result.ONLY_IN_YML) 
+                    {
+                        Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
+                        errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
+                        
+                    }
+                }
+                else
+                {
+                    ymlVariable.Result = Result.TYPE_MISMATCH;
+                    Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
+                    errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
                 }
 
             }
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                var ymlLastChild = ymlVariable.Children.Last();
-                ymlLastChild.Result = Result.ONLY_IN_YML;
-                ymlVariable.Result = Result.ONLY_IN_YML;
+                ymlVariable.Result = Result.TYPE_MISMATCH; 
+                Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
+                errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
             }
             else
             {
@@ -319,15 +333,20 @@ namespace ConfigFileAssistant_v1
                         if(ymlVariable.Name.Equals(v.Name))
                         {
                             ymlVariable.Result = Result.OK;
+                            break;
                         }
+                    }
+                    if(ymlVariable.Result == Result.ONLY_IN_YML)
+                    {
+                        Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
+                        errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
                     }
                 }
             }
            
         }
-        public static UpdateLog MigrateVariables(List<VariableInfo> filteredVariables, string filePath)
+        public static void MigrateVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables, string filePath)
         {
-            UpdateLog Log = new UpdateLog();
             var yaml = new YamlStream();
             using (var reader = new StreamReader(filePath))
             {
@@ -342,33 +361,89 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
+                MakeBackup(filePath);
                 mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
             }
 
-            foreach (var variable in filteredVariables)
+            foreach (var key in errorVariableNames.Keys)
             {
-                if (variable.TypeName.Equals(typeof(Dictionary<,>).Name))
-                {
-                    mapping.Add(new YamlScalarNode(variable.Name), new YamlMappingNode());
-                }
-               else if (variable.Type.Equals(typeof(List<>).Name))
-                {
-                    mapping.Add(new YamlScalarNode(variable.Name), new YamlSequenceNode());
-               }
-               else
-                {
-                    mapping.Children[variable.Name] = new YamlScalarNode(variable.Value.ToString());
-                }
-
-                Log.AddMessage($"{variable.Name} ({variable.TypeName}) added to config file\n");
+                VariableInfo variable = ymlVariables.Find(x => x.FullName.Equals(key));
+                
+                var names = key.Split('.');
+                // FindYamlNode(mapping, names, 0, variable);
             }
-
             using (var writer = new StreamWriter(filePath))
             {
                 yaml.Save(writer, assignAnchors: false);
             }
+        }
+       
+        private static void  FindYamlNode(YamlNode node, string[] names, int index, VariableInfo variable)
+        {
+            
+            if (node is YamlMappingNode mappingNode)
+            {
+                var match = Regex.Match(names[index], @"^(\w+)\[(\d+)\]$");
 
-            return Log;
+                if (match.Success)
+                {
+                    string arrayName = match.Groups[1].Value;
+                    int arrayIndex = int.Parse(match.Groups[2].Value);
+
+                    if (mappingNode.Children.TryGetValue(new YamlScalarNode(arrayName), out YamlNode arrayNode) &&
+                        arrayNode is YamlSequenceNode sequenceNode &&
+                        arrayIndex < sequenceNode.Children.Count)
+                    {
+                         FindYamlNode(sequenceNode.Children[arrayIndex], names, index + 1, variable);
+                    }
+                }
+                else
+                {
+                    if (mappingNode.Children.TryGetValue(new YamlScalarNode(names[index]), out YamlNode nextNode))
+                    {
+                         FindYamlNode(nextNode, names, index + 1, variable);
+                    }
+                }
+            }
+            else if (node is YamlSequenceNode sequenceNode)
+            {
+                if (int.TryParse(names[index], out int seqIndex) && seqIndex < sequenceNode.Children.Count)
+                {
+                     FindYamlNode(sequenceNode.Children[seqIndex], names, index + 1, variable);
+                }
+            }
+            else
+            {
+                var result = variable.Result;
+                switch (result)
+                {
+                    case Result.ONLY_IN_CS:
+                        Debug.WriteLine(names[index] + ":" + result);
+                        break;
+
+                    case Result.TYPE_MISMATCH:
+
+                        Debug.WriteLine(names[index] + ":" + result);
+                        break;
+                    case Result.ONLY_IN_YML:
+
+                        Debug.WriteLine(names[index] + ":" + result);
+                        break;
+
+                    default:
+
+                        Debug.WriteLine(names[index] + ":" + result);
+                        break;
+                }
+            }
+        }
+        
+        private static void MakeBackup(string filePath)
+        {
+            string backupFolder = Path.Combine(Path.GetDirectoryName(filePath), "configbackup");
+            Directory.CreateDirectory(backupFolder);
+            string backupFilePath = Path.Combine(backupFolder, $"config_{DateTime.Now:yyyyMMddHHmmss}.yml");
+            File.Copy(filePath, backupFilePath, true);
         }
     }
 }

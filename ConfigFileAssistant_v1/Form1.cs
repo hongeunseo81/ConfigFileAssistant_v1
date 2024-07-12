@@ -58,9 +58,10 @@ namespace ConfigFileAssistant_v1
             conf = new Config();
             csVariables = ConfigValidator.ExtractCsVariables();
             ymlVariables = ConfigValidator.ExtractYmlVariables(filePath);
-            var result = ConfigValidator.CompareVariables(csVariables, ymlVariables);
+            ConfigValidator.CompareVariables(csVariables, ymlVariables);
 
-            AddVariablesToDataGridView(result, ymlDataTreeListView);
+            AddVariablesToDataGridView(csVariables, dataTreeListView1);
+            AddVariablesToDataGridView(ymlVariables, ymlDataTreeListView);
         }
 
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
@@ -125,7 +126,6 @@ namespace ConfigFileAssistant_v1
                     e.Item.BackColor = Color.LemonChiffon;
                     e.Item.ForeColor = Color.Black;
                 }
-
             };
 
             objectListView.RebuildColumns();
@@ -150,10 +150,8 @@ namespace ConfigFileAssistant_v1
 
         private void nextButton_Click(object sender, EventArgs e)
         {
-            List<VariableInfo> wrongVariables = ymlVariables.Where(v => v.Result != Result.OK).ToList();
-            List<VariableInfo> filteredCsVariables = csVariables.Where(v => wrongVariables.Any(o => o.Name == v.Name)).ToList();
-            var Log = ConfigValidator.MigrateVariables(filteredCsVariables, filePath);
-            var result = MessageBox.Show(Log.Message.ToString(),"Log Message", MessageBoxButtons.OK);
+            ConfigValidator.MigrateVariables(csVariables,ymlVariables, filePath);
+            var result = MessageBox.Show("","Log Message", MessageBoxButtons.OK);
             if(result == DialogResult.OK)
             {
                 this.Close();

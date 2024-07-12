@@ -15,20 +15,18 @@ namespace ConfigFileAssistant_v1
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
+            /*Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            Application.Run(new MainForm());*/
 
-            /*var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
+           var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
             var csVariables = ConfigValidator.ExtractCsVariables();
             
             var ymlVariables = ConfigValidator.ExtractYmlVariables(filePath);
             var result = ConfigValidator.CompareVariables(csVariables, ymlVariables);
          
-            List<VariableInfo> onlyInCSVariables = result.Where(v => v.Result == Result.ONLY_IN_CS).ToList();    
-            List<VariableInfo> filteredCsVariables = csVariables.Where(v => onlyInCSVariables.Any(o => o.Name == v.Name)).ToList();
-            var Log = ConfigValidator.MigrateVariables(filteredCsVariables, filePath);
-*/
+            ConfigValidator.MigrateVariables(csVariables,ymlVariables, filePath);
+
         }
     }
 }

@@ -3,24 +3,26 @@ using CoPick.Setting;
 using ScintillaNET;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Windows.Forms;
 using YamlDotNet.Core.Tokens;
 using YamlDotNet.RepresentationModel;
 
 namespace ConfigFileAssistant_v1
 {
-
     public class VariableInfo
     {
         public string Name { get; set; }
         public Type Type { get; set; }
         public string TypeName { get; set; }
         public object Value { get; set; }
-        public Note Note { get; set; }
+        public Result Result { get; set; }
         public List<VariableInfo> Children { get; set; }
         
         public void AddChild(VariableInfo child)
@@ -36,15 +38,31 @@ namespace ConfigFileAssistant_v1
             TypeName = type.Name;
             Children = new List<VariableInfo>();
             Value = value;
-            Note = Note.OK;
+            Result = Result.OK;
         }
         public bool HasChildren()
         {
             return Children.Count > 0;
         }
     }
+    public class UpdateLog
+    {
+        public StringBuilder Message { get; set; }
+        public DateTime CreatedAt { get; set; }
 
-    public enum Note 
+        public UpdateLog() 
+        { 
+            CreatedAt = DateTime.Now;
+            Message = new StringBuilder();
+            Message.Append(CreatedAt).Append("\n\n");
+        }
+        public void AddMessage(string message)
+        {
+            Message.Append(message);
+        }
+    }
+
+    public enum Result 
     { 
         OK,
         ERROR,
@@ -55,6 +73,8 @@ namespace ConfigFileAssistant_v1
 
     public class ConfigValidator
     {
+
+        public static Object instance;
         public static List<VariableInfo> ExtractYmlVariables(string filePath)
         {
             var variables = new List<VariableInfo>();
@@ -64,9 +84,11 @@ namespace ConfigFileAssistant_v1
             {
                 yaml.Load(reader);
             }
-            var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
-            ExtractYmlVariablesRecursive(mapping, variables, "");
-
+            if(yaml.Documents.Count != 0)
+            {
+                var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
+                ExtractYmlVariablesRecursive(mapping, variables, "");
+            }
             return variables;
         }
         private static void ExtractYmlVariablesRecursive(YamlNode node, List<VariableInfo> variables, string prefix)
@@ -140,24 +162,23 @@ namespace ConfigFileAssistant_v1
         {
             var variables = new List<VariableInfo>();
             var type = typeof(Config);
+            instance = Activator.CreateInstance(typeof(Config));
 
             foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                ProcessProperty(property.Name, property.PropertyType, null, variables);
+                object defaultValue = GetDefaultValue(property,instance);
+                ProcessProperty(property.Name, property.PropertyType, defaultValue, variables);
             }
             return variables;
         }
-
-        private static void ProcessProperty(string propertyName, Type propertyType, object value, List<VariableInfo> variables)
+        
+        private static void ProcessProperty(string propertyName, Type propertyType, Object value,List<VariableInfo> variables)
         {
-            var variableInfo = new VariableInfo(propertyName, propertyType, value);
-
+            VariableInfo variableInfo = new VariableInfo(propertyName, propertyType, value);
             if (!propertyType.IsGenericType)
             {
                 if (propertyType.IsEnum)
                 {
-
-                    Debug.WriteLine(propertyName);
                     foreach (var item in propertyType.GetEnumValues())
                     {
                         var enumField = propertyType.GetField(item.ToString());
@@ -187,16 +208,35 @@ namespace ConfigFileAssistant_v1
                 Type keyType = genericArgs[0];
                 Type valueType = genericArgs[1];
 
-                ProcessProperty("Key", keyType, null, variableInfo.Children);
-                ProcessProperty("Value", valueType, null, variableInfo.Children);
+                ProcessProperty("Key", keyType,"", variableInfo.Children);
+                ProcessProperty("Value", valueType,"", variableInfo.Children);
 
             }
             else if (genericTypeDefinition == typeof(List<>))
             {
                 Type itemType = genericArgs[0];
-                ProcessProperty("Item", itemType, null, variableInfo.Children);
+                ProcessProperty("Item", itemType, "", variableInfo.Children);
             }
             variables.Add(variableInfo);
+        }
+        public static object GetDefaultValue(PropertyInfo property, object instance)
+        {
+            var defaultValueAttribute = property.GetCustomAttribute<DefaultValueAttribute>();
+            if (defaultValueAttribute != null)
+            {
+                return defaultValueAttribute.Value;
+            }
+
+            if (instance != null)
+            {
+                var value = property.GetValue(instance);
+                if (value != null)
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
         }
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
@@ -206,21 +246,19 @@ namespace ConfigFileAssistant_v1
             {
                 if (ymlVariableDict.TryGetValue(csVariable.Name, out var ymlVariable))
                 {
-                    CompareChild(csVariable, ymlVariable,null);
-
-                    if (ymlVariable.Children.Any(child => child.Note != Note.OK))
+                    if((csVariable.Type.IsGenericType || ymlVariable.Type.IsGenericType) && !csVariable.TypeName.Equals(ymlVariable.TypeName))
                     {
-                        if(ymlVariable.Children.First(child => child.Note != Note.OK)!=null)
-                        {
-
-                            ymlVariable.Note = Note.ERROR;
-                        }
+                        ymlVariable.Result = Result.TYPE_MISMATCH;
+                    }
+                    else
+                    {
+                        CompareChild(csVariable, ymlVariable, null);
                     }
                 }
                 else
                 {
-                    var variable = new VariableInfo(csVariable.Name, csVariable.Type, null);
-                    variable.Note = Note.ONLY_IN_CS;
+                    var variable = new VariableInfo(csVariable.Name, csVariable.Type, csVariable.Value);
+                    variable.Result = Result.ONLY_IN_CS;
                     ymlVariables.Add(variable);
                 }
             }
@@ -229,36 +267,35 @@ namespace ConfigFileAssistant_v1
             {
                 if (!csVariables.Any(v => v.Name == ymlVariable.Name))
                 {
-                    ymlVariable.Note = Note.ONLY_IN_YML;
+                    ymlVariable.Result = Result.ONLY_IN_YML;
                 }
             }
             return ymlVariables;
         }
         private static void CompareChild(VariableInfo csVariable, VariableInfo ymlVariable, VariableInfo csParentVariable)
         {
-
             if (csVariable.HasChildren() && ymlVariable.HasChildren())
             {
                 foreach (var child in ymlVariable.Children)
                 {
                     CompareChild(csVariable.Children.Last(), child, csVariable);
-                    if (child.Note != Note.OK)
+                    if (child.Result != Result.OK)
                     {
-                        ymlVariable.Note = Note.ERROR;
+                        ymlVariable.Result = Result.ERROR;
                     }
                 }
                
             }
             else if (csVariable.HasChildren() && !ymlVariable.HasChildren())
             {
-                ymlVariable.Note = Note.ONLY_IN_YML;
                 if (csVariable.Type.IsEnum)
                 {
+                    ymlVariable.Result = Result.ONLY_IN_YML;
                     foreach (var item in csVariable.Children)
                     {
                         if (ymlVariable.Value.ToString().Equals(item.Name))
                         {
-                            ymlVariable.Note = Note.OK;
+                            ymlVariable.Result = Result.OK;
                             break;
                         }
                     }
@@ -268,26 +305,70 @@ namespace ConfigFileAssistant_v1
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
                 var ymlLastChild = ymlVariable.Children.Last();
-                ymlLastChild.Note = Note.ONLY_IN_YML;
-                ymlVariable.Note = Note.ONLY_IN_YML;
+                ymlLastChild.Result = Result.ONLY_IN_YML;
+                ymlVariable.Result = Result.ONLY_IN_YML;
             }
             else
             {
                 if (csParentVariable != null) 
                 {
-                    ymlVariable.Note = Note.ONLY_IN_YML;
+                    ymlVariable.Result = Result.ONLY_IN_YML;
                     var variable = csParentVariable.Children.First();
                     foreach(var v in variable.Children)
                     {
                         if(ymlVariable.Name.Equals(v.Name))
                         {
-
-                            ymlVariable.Note = Note.OK;
+                            ymlVariable.Result = Result.OK;
                         }
                     }
                 }
             }
            
+        }
+        public static UpdateLog MigrateVariables(List<VariableInfo> filteredVariables, string filePath)
+        {
+            UpdateLog Log = new UpdateLog();
+            var yaml = new YamlStream();
+            using (var reader = new StreamReader(filePath))
+            {
+                yaml.Load(reader);
+            }
+            YamlMappingNode mapping;
+            if (yaml.Documents.Count == 0)
+            {
+                mapping = new YamlMappingNode();
+                var newDocument = new YamlDocument(mapping);
+                yaml.Documents.Add(newDocument);
+            }
+            else
+            {
+                mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
+            }
+
+            foreach (var variable in filteredVariables)
+            {
+                if (variable.TypeName.Equals(typeof(Dictionary<,>).Name))
+                {
+                    mapping.Add(new YamlScalarNode(variable.Name), new YamlMappingNode());
+                }
+               else if (variable.Type.Equals(typeof(List<>).Name))
+                {
+                    mapping.Add(new YamlScalarNode(variable.Name), new YamlSequenceNode());
+               }
+               else
+                {
+                    mapping.Children[variable.Name] = new YamlScalarNode(variable.Value.ToString());
+                }
+
+                Log.AddMessage($"{variable.Name} ({variable.TypeName}) added to config file\n");
+            }
+
+            using (var writer = new StreamWriter(filePath))
+            {
+                yaml.Save(writer, assignAnchors: false);
+            }
+
+            return Log;
         }
     }
 }

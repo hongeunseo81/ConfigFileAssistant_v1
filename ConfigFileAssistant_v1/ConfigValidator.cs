@@ -28,6 +28,7 @@ namespace ConfigFileAssistant_v1
         public string TypeName { get; set; }
         public object Value { get; set; }
         public Result Result { get; set; }
+        public string DefaultType {  get; set; }
         public List<VariableInfo> Children { get; set; }
         
         public void AddChild(VariableInfo child)
@@ -74,7 +75,7 @@ namespace ConfigFileAssistant_v1
     public class ConfigValidator
     {
         public static Object instance;
-        public static Dictionary<string, Result> errorVariableNames;
+        public static Dictionary<String,VariableInfo> errorVariableNames;
         public static List<VariableInfo> ExtractYmlVariables(string filePath)
         {
             var variables = new List<VariableInfo>();
@@ -231,11 +232,11 @@ namespace ConfigFileAssistant_v1
                 }
             }
 
-            return string.Empty;
+            return null;
         }
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
-            errorVariableNames = new Dictionary<string,Result>();
+            errorVariableNames = new Dictionary<string,VariableInfo>();
             var ymlVariableDict = ymlVariables.ToDictionary(v => v.Name);
 
             foreach (var csVariable in csVariables)
@@ -245,8 +246,9 @@ namespace ConfigFileAssistant_v1
                     if((csVariable.Type.IsGenericType || ymlVariable.Type.IsGenericType) && !csVariable.TypeName.Equals(ymlVariable.TypeName))
                     {
                         ymlVariable.Result = Result.TYPE_MISMATCH;
-                        errorVariableNames[ymlVariable.FullName] = ymlVariable.Result; 
-                        
+                        ymlVariable.DefaultType = csVariable.TypeName;
+                        errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
+
                     }
                     else
                     {
@@ -257,8 +259,9 @@ namespace ConfigFileAssistant_v1
                 {
                     var variable = new VariableInfo(csVariable.Name, csVariable.Type, csVariable.Value);
                     variable.Result = Result.ONLY_IN_CS;
-                    ymlVariables.Add(variable);
-                    errorVariableNames[variable.FullName] = variable.Result;
+                    ymlVariables.Add(variable); 
+                    errorVariableNames.Add(variable.FullName, variable);
+
                 }
             }
 
@@ -267,9 +270,8 @@ namespace ConfigFileAssistant_v1
                 if (!csVariables.Any(v => v.Name == ymlVariable.Name))
                 {
                     ymlVariable.Result = Result.ONLY_IN_YML; 
-                    Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
-                    errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
-                   
+                    errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
+
                 }
             }
             return ymlVariables;
@@ -303,24 +305,27 @@ namespace ConfigFileAssistant_v1
                     }
                     if(ymlVariable.Result == Result.ONLY_IN_YML) 
                     {
-                        Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
-                        errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
-                        
+                        errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
+
                     }
+                }
+                else if (!csVariable.TypeName.Equals(ymlVariable.TypeName))
+                {
+                    ymlVariable.Result = Result.TYPE_MISMATCH;
+                    ymlVariable.DefaultType = csVariable.TypeName;
+                    errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                 }
                 else
                 {
-                    ymlVariable.Result = Result.TYPE_MISMATCH;
-                    Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
-                    errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
+                    ymlVariable.Result = Result.OK;
                 }
-
+                
             }
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                ymlVariable.Result = Result.TYPE_MISMATCH; 
-                Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
-                errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
+                ymlVariable.Result = Result.TYPE_MISMATCH;
+                ymlVariable.DefaultType = csVariable.TypeName;
+                errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
             }
             else
             {
@@ -338,8 +343,7 @@ namespace ConfigFileAssistant_v1
                     }
                     if(ymlVariable.Result == Result.ONLY_IN_YML)
                     {
-                        Dictionary<string, Result> errorVariable = new Dictionary<string, Result>();
-                        errorVariableNames[ymlVariable.FullName] = ymlVariable.Result;
+                        errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
                     }
                 }
             }
@@ -367,77 +371,79 @@ namespace ConfigFileAssistant_v1
 
             foreach (var key in errorVariableNames.Keys)
             {
-                VariableInfo variable = ymlVariables.Find(x => x.FullName.Equals(key));
-                
-                var names = key.Split('.');
-                // FindYamlNode(mapping, names, 0, variable);
+                if (errorVariableNames.TryGetValue(key, out VariableInfo variableInfo))
+                {
+                    var names = key.Split('.');
+                    FindYamlNode(mapping, names, 0,-1, variableInfo);                    
+                }
             }
             using (var writer = new StreamWriter(filePath))
             {
                 yaml.Save(writer, assignAnchors: false);
             }
         }
-       
-        private static void  FindYamlNode(YamlNode node, string[] names, int index, VariableInfo variable)
+
+        private static void FindYamlNode (YamlNode node, string[] names, int index, int arrayIndex, VariableInfo variableInfo )
         {
-            
-            if (node is YamlMappingNode mappingNode)
+            if(index == names.Length-1)
+            {
+                var mapping = (YamlMappingNode)(node);
+                switch (variableInfo.Result)
+                {
+                    case Result.ONLY_IN_CS:
+                        Debug.WriteLine(names[index]);
+                        mapping.Add(new YamlScalarNode(names[index]), new YamlScalarNode(variableInfo.Value.ToString()));
+                        break;
+                    case Result.TYPE_MISMATCH:
+                        if(variableInfo.DefaultType.Equals(typeof(Dictionary<,>).Name))
+                        {
+                            mapping.Children[names[index]] = new YamlMappingNode();
+                        }
+                        else if(variableInfo.DefaultType.Equals( typeof(List<>).Name))
+                        {
+
+                            mapping.Children[names[index]] = new YamlSequenceNode();
+                        }
+                        else
+                        {
+                            mapping.Children[names[index]] = "엥";
+                        }
+                        break;
+                    case Result.ONLY_IN_YML:
+                        mapping.Children.Remove(names[index]);
+                        break;
+                    default:
+                        break;
+                }
+                return;
+               
+            }
+            if(node is YamlMappingNode mappingNode)
             {
                 var match = Regex.Match(names[index], @"^(\w+)\[(\d+)\]$");
 
                 if (match.Success)
                 {
                     string arrayName = match.Groups[1].Value;
-                    int arrayIndex = int.Parse(match.Groups[2].Value);
+                    arrayIndex = int.Parse(match.Groups[2].Value);
 
                     if (mappingNode.Children.TryGetValue(new YamlScalarNode(arrayName), out YamlNode arrayNode) &&
                         arrayNode is YamlSequenceNode sequenceNode &&
                         arrayIndex < sequenceNode.Children.Count)
                     {
-                         FindYamlNode(sequenceNode.Children[arrayIndex], names, index + 1, variable);
+                        FindYamlNode(sequenceNode.Children[arrayIndex], names, index + 1,arrayIndex, variableInfo);
                     }
                 }
                 else
                 {
                     if (mappingNode.Children.TryGetValue(new YamlScalarNode(names[index]), out YamlNode nextNode))
                     {
-                         FindYamlNode(nextNode, names, index + 1, variable);
+                        FindYamlNode(nextNode, names, index + 1, arrayIndex, variableInfo);
                     }
                 }
             }
-            else if (node is YamlSequenceNode sequenceNode)
-            {
-                if (int.TryParse(names[index], out int seqIndex) && seqIndex < sequenceNode.Children.Count)
-                {
-                     FindYamlNode(sequenceNode.Children[seqIndex], names, index + 1, variable);
-                }
-            }
-            else
-            {
-                var result = variable.Result;
-                switch (result)
-                {
-                    case Result.ONLY_IN_CS:
-                        Debug.WriteLine(names[index] + ":" + result);
-                        break;
-
-                    case Result.TYPE_MISMATCH:
-
-                        Debug.WriteLine(names[index] + ":" + result);
-                        break;
-                    case Result.ONLY_IN_YML:
-
-                        Debug.WriteLine(names[index] + ":" + result);
-                        break;
-
-                    default:
-
-                        Debug.WriteLine(names[index] + ":" + result);
-                        break;
-                }
-            }
+            
         }
-        
         private static void MakeBackup(string filePath)
         {
             string backupFolder = Path.Combine(Path.GetDirectoryName(filePath), "configbackup");

@@ -29,6 +29,7 @@ namespace ConfigFileAssistant_v1
         public object Value { get; set; }
         public Result Result { get; set; }
         public string DefaultType {  get; set; }
+        public string DefaultValue {  get; set; }   
         public List<VariableInfo> Children { get; set; }
         
         public void AddChild(VariableInfo child)
@@ -136,7 +137,7 @@ namespace ConfigFileAssistant_v1
                 int index = 0;
                 foreach (var childNode in sequenceNode.Children)
                 {
-                    var childPrefix = $"{prefix}[{index}]";
+                    var childPrefix = $"{prefix}.[{index}]";
 
                     if (childNode is YamlMappingNode)
                     {
@@ -162,7 +163,7 @@ namespace ConfigFileAssistant_v1
                 variables.Add(new VariableInfo(prefix, typeof(string), scalarNode.Value));
             }
         }
-
+      
         public static List<VariableInfo> ExtractCsVariables()
         {
             csVariables = new List<VariableInfo>();
@@ -241,17 +242,16 @@ namespace ConfigFileAssistant_v1
                     return value;
                 }
             }
-
             return string.Empty;
         }
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
             errorVariableNames = new Dictionary<string,VariableInfo>();
-            var ymlVariableDict = ymlVariables.ToDictionary(v => v.Name);
+            var resultDict = ymlVariables.ToDictionary(v => v.Name);
 
             foreach (var csVariable in csVariables)
             {
-                if (ymlVariableDict.TryGetValue(csVariable.Name, out var ymlVariable))
+                if (resultDict.TryGetValue(csVariable.Name, out var ymlVariable))
                 {
                     if((csVariable.Type.IsGenericType || ymlVariable.Type.IsGenericType) && !csVariable.TypeName.Equals(ymlVariable.TypeName))
                     {
@@ -304,6 +304,8 @@ namespace ConfigFileAssistant_v1
                         if (ymlVariable.Value.ToString().Equals(item.Name))
                         {
                             ymlVariable.Result = Result.OK;
+                            ymlVariable.Type = csVariable.Type;
+                            ymlVariable.TypeName = csVariable.TypeName;
                             break;
                         }
                     }
@@ -342,6 +344,8 @@ namespace ConfigFileAssistant_v1
                         if(ymlVariable.Name.Equals(v.Name))
                         {
                             ymlVariable.Result = Result.OK;
+                            ymlVariable.Type = csVariable.Type;
+                            ymlVariable.TypeName = csVariable.TypeName;
                             break;
                         }
                     }
@@ -357,145 +361,104 @@ namespace ConfigFileAssistant_v1
         {
             return errorVariableNames.Count > 0;
         }
-        public static void MigrateVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables, string filePath)
+        
+        public static List<VariableInfo> FindParent(string fullName)
         {
-            foreach (var key in errorVariableNames.Keys)
-            {
-                if (errorVariableNames.TryGetValue(key, out VariableInfo variableInfo))
-                {
-                    var names = key.Split('.');
-                    int index = 0;
-                    YamlNode targetNode = FindYamlNode(root, names, index, -1);
+            var names = fullName.Split('.');
+            int depth = names.Length;
 
-                    if (targetNode != null && index < names.Length)
-                    {
-                        ModifyYamlNode(targetNode, names[names.Length - 1], variableInfo);
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"can not find node {key}");
-                    }
+            var parent = ymlVariables;
+
+            for (int i = 0; i < depth - 1; i++)
+            {
+                var currentVar = parent.Find(v => v.Name == names[i]);
+                if (currentVar == null)
+                {
+                    return null;
                 }
+                parent = currentVar.Children;
             }
-            using (var writer = new StreamWriter(filePath))
-            {
-                yaml.Save(writer, assignAnchors: false);
-            }
+            return parent;
         }
-        public static void RemoveChild(List<VariableInfo> variables, string fullName)
+        public static void RemoveChild(string fullName)
         {
-            VariableInfo target = variables.FirstOrDefault(v => v.FullName == fullName);
-            if (target == null)
+            var targetVar = ymlVariables.Find(x => x.FullName == fullName);
+            if(targetVar != null)
             {
+                ymlVariables.Remove(targetVar);
+            }
+            else
+            {
+                var parent = FindParent(fullName);
                 var names = fullName.Split('.');
-                int index = 0;
-                VariableInfo currentParent = variables.FirstOrDefault(v => fullName.StartsWith(v.FullName)); ;
-
-                while (index < names.Length || target == null)
+                int depth = names.Length;
+                var targetName = names[depth - 1];
+                targetVar = parent.Find(v => v.Name == targetName);
+                if (targetVar != null)
                 {
-                    var current = currentParent.Children.FirstOrDefault(v => fullName.StartsWith(v.FullName));
-                    if (current == null)
-                    {
-                        target = currentParent;
-                    }
-                    else
-                    {
-                        currentParent = current;
-                    }
-                    target = currentParent.Children.FirstOrDefault(v => fullName == v.FullName);
-
-                    index++;
-                }
-                currentParent.Children.Remove(target);  
-            }
-
-        }
-
-        public static void UpdateCellValueToNode(Dictionary<string,string> editedValues, string filePath)
-        {
-            Debug.WriteLine("backup");
-            MakeBackup(filePath);
-            foreach(var key in editedValues.Keys)
-            {
-                var names = key.Split('.');
-                int index = 0;
-                YamlNode targetNode = FindYamlNode(root, names, index, -1);
-                if (targetNode != null && index < names.Length)
-                {
-                    if (targetNode is YamlMappingNode mapping)
-                    {
-                        mapping.Children[names.Last()] = new YamlScalarNode(editedValues[key].ToString());
-                    }
-                }
-            }
-           
-        }
-        private static YamlNode FindYamlNode(YamlNode node, string[] names, int index, int arrayIndex)
-        {
-            if (index == names.Length - 1)
-            {
-                return node;
-            }
-
-            if (node is YamlMappingNode mappingNode)
-            {
-                var match = Regex.Match(names[index], @"^(\w+)\[(\d+)\]$");
-
-                if (match.Success)
-                {
-                    string arrayName = match.Groups[1].Value;
-                    arrayIndex = int.Parse(match.Groups[2].Value);
-
-                    if (mappingNode.Children.TryGetValue(new YamlScalarNode(arrayName), out YamlNode arrayNode) &&
-                        arrayNode is YamlSequenceNode sequenceNode &&
-                        arrayIndex < sequenceNode.Children.Count)
-                    {
-                        return FindYamlNode(sequenceNode.Children[arrayIndex], names, index + 1, arrayIndex);
-                    }
+                    parent.Remove(targetVar);
                 }
                 else
                 {
-                    if (mappingNode.Children.TryGetValue(new YamlScalarNode(names[index]), out YamlNode nextNode))
-                    {
-                        return FindYamlNode(nextNode, names, index + 1, arrayIndex);
-                    }
+                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
                 }
             }
-
-            return null;
+            
         }
 
-        private static void ModifyYamlNode(YamlNode node, string name, VariableInfo variableInfo)
+        public static void ModifyChild(string fullName)
         {
-            if (node is YamlMappingNode mapping)
+            var targetVar = ymlVariables.Find(x => x.FullName == fullName);
+            if (targetVar != null)
             {
-                switch (variableInfo.Result)
+                targetVar.Value = "default";
+            }
+            else
+            {
+                var names = fullName.Split('.');
+                int depth = names.Length;
+
+                var parent = FindParent(fullName);
+                var targetName = names[depth - 1];
+                targetVar = parent.Find(v => v.Name == targetName);
+                if (targetVar != null)
                 {
-                    case Result.ONLY_IN_CS:
-                        mapping.Add(new YamlScalarNode(name), new YamlScalarNode(variableInfo.Value.ToString()));
-                        break;
-                    case Result.TYPE_MISMATCH:
-                        if (variableInfo.DefaultType.Equals(typeof(Dictionary<,>).Name))
-                        {
-                            mapping.Children[name] = new YamlMappingNode();
-                        }
-                        else if (variableInfo.DefaultType.Equals(typeof(List<>).Name))
-                        {
-                            mapping.Children[name] = new YamlSequenceNode();
-                        }
-                        else
-                        {
-                            mapping.Children[name] = new YamlScalarNode(variableInfo.Value.ToString());
-                        }
-                        break;
-                    case Result.ONLY_IN_YML:
-                        mapping.Children.Remove(name);
-                        break;
-                    default:
-                        break;
+                    targetVar.Value = "default";
+                }
+                else
+                {
+                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
                 }
             }
         }
+        public static void UpdateChild(string fullName, string value)
+        {
+            var names = fullName.Split('.');
+            int depth = names.Length;
+            
+            var targetVar = ymlVariables.Find(x=>x.FullName == fullName);
+            if(targetVar != null)
+            {
+                // 값 검증 필요
+                targetVar.Value = value;
+            }
+            else
+            {
+                var parent = FindParent(fullName);
+                var targetName = names[depth - 1];
+                targetVar = parent.Find(v => v.Name == targetName);
+                if (targetVar != null)
+                {
+                    targetVar.Value = value;
+                }
+                else
+                {
+                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
+                }
+            }
+            
+        }
+        
         private static void MakeBackup(string filePath)
         {
             string backupFolder = Path.Combine(Path.GetDirectoryName(filePath), "configbackup");

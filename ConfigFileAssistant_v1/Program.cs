@@ -19,13 +19,14 @@ namespace ConfigFileAssistant_v1
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
 
-          /* var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
+          /*  var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
             var csVariables = ConfigValidator.ExtractCsVariables();
-            
-            var ymlVariables = ConfigValidator.ExtractYmlVariables(filePath);
+
+            var ymlVariables = ConfigValidator.ExtractYmlVariables();
             var result = ConfigValidator.CompareVariables(csVariables, ymlVariables);
-         
-            ConfigValidator.MigrateVariables(csVariables, result, filePath);*/
+            ConfigValidator.RemoveChild(result,"CameraConfigs.REAR.[0].Ips");*/
+
+            // ConfigValidator.MigrateVariables(csVariables, result, filePath);
 
         }
     }

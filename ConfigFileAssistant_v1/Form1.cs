@@ -14,6 +14,7 @@ namespace ConfigFileAssistant_v1
         private string filePath;
         private List<VariableInfo> csVariables;
         private List<VariableInfo> ymlVariables;
+        private List<VariableInfo> resultVariables;
         private Dictionary<string,string> editedValues;
 
         private Config conf;
@@ -66,10 +67,11 @@ namespace ConfigFileAssistant_v1
             conf = new Config();
             csVariables = ConfigValidator.ExtractCsVariables();
             ymlVariables = ConfigValidator.ExtractYmlVariables();
-            ConfigValidator.CompareVariables(csVariables, ymlVariables);
-            ymlDataTreeListView.CellEditStarting += DataTreeListView_CellEditStarting;
-            ymlDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
-            AddVariablesToDataGridView(ymlVariables, ymlDataTreeListView);
+            resultVariables = ConfigValidator.CompareVariables(csVariables, ymlVariables);
+            VariableDataTreeListView.CellEditStarting += DataTreeListView_CellEditStarting;
+            VariableDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
+            AddVariablesToDataGridView(resultVariables, VariableDataTreeListView);
+            AddVariablesToDataGridView(csVariables, dataTreeListView1);
         }
 
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
@@ -81,14 +83,14 @@ namespace ConfigFileAssistant_v1
 
             if (objectListView.AllColumns.Count == 0)
             {
-                OLVColumn nameColumn = new OLVColumn("Name", "Name")
+                OLVColumn nameColumn = new OLVColumn("FullName", "FullName")
                 {
-                    AspectName = "Name",
+                    AspectName = "FullName",
                     Width = 300,
                     AspectGetter = delegate (object rowObject)
                     {
                         var variableInfo = (VariableInfo)rowObject;
-                        return variableInfo.Name;
+                        return variableInfo.FullName;
                     },
                     ImageGetter = delegate (object rowObject)
                     {
@@ -142,18 +144,17 @@ namespace ConfigFileAssistant_v1
             }
         }
 
-
         private void expandAllButton_Click(object sender, EventArgs e)
         {
             if (IsExpanded)
             {
-                ymlDataTreeListView.CollapseAll();
+                VariableDataTreeListView.CollapseAll();
                 expandAllButton.Image = buttonImageList.Images["expand"];
                 IsExpanded = false;
             }
             else
             {
-                ymlDataTreeListView.ExpandAll();
+                VariableDataTreeListView.ExpandAll();
                 expandAllButton.Image = buttonImageList.Images["collapse"];
                 IsExpanded = true;
             }
@@ -210,7 +211,7 @@ namespace ConfigFileAssistant_v1
         }
         private void SetEditable(bool isEditable)
         {
-            foreach (OLVColumn column in ymlDataTreeListView.Columns)
+            foreach (OLVColumn column in VariableDataTreeListView.Columns)
             {
                 if (column.AspectName == "Value")
                 {
@@ -224,19 +225,19 @@ namespace ConfigFileAssistant_v1
 
             if (isEditable)
             {
-                ymlDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.SingleClick;
-                ymlDataTreeListView.BackColor = Color.PowderBlue;
-                ymlDataTreeListView.ForeColor = Color.Black;
-                ymlDataTreeListView.CellClick += YmlDataTreeListView_CellClick;
-                ymlDataTreeListView.CellOver += YmlDataTreeListView_CellOver;
+                VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.SingleClick;
+                VariableDataTreeListView.BackColor = Color.PowderBlue;
+                VariableDataTreeListView.ForeColor = Color.Black;
+                VariableDataTreeListView.CellClick += YmlDataTreeListView_CellClick;
+                VariableDataTreeListView.CellOver += YmlDataTreeListView_CellOver;
             }
             else
             {
-                ymlDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.None;
-                ymlDataTreeListView.BackColor = SystemColors.Window;
-                ymlDataTreeListView.ForeColor = SystemColors.ControlText;
-                ymlDataTreeListView.CellClick -= YmlDataTreeListView_CellClick;
-                ymlDataTreeListView.CellOver -= YmlDataTreeListView_CellOver;
+                VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.None;
+                VariableDataTreeListView.BackColor = SystemColors.Window;
+                VariableDataTreeListView.ForeColor = SystemColors.ControlText;
+                VariableDataTreeListView.CellClick -= YmlDataTreeListView_CellClick;
+                VariableDataTreeListView.CellOver -= YmlDataTreeListView_CellOver;
             }
         }
 
@@ -256,7 +257,6 @@ namespace ConfigFileAssistant_v1
             }
         }
 
-        
         private void YmlDataTreeListView_CellClick(object sender, CellClickEventArgs e)
         {
             if (e.Model == null)
@@ -268,15 +268,18 @@ namespace ConfigFileAssistant_v1
                 switch(variableInfo.Result) 
                 { 
                     case Result.ONLY_IN_CS:
-                        ymlDataTreeListView.RemoveObject(variableInfo);
                         variableInfo.Result = Result.OK;
-                        ymlDataTreeListView.AddObject(variableInfo);
+                        VariableDataTreeListView.RemoveObject(variableInfo);
+                        VariableDataTreeListView.AddObject(variableInfo);
                         break;
                     case Result.ONLY_IN_YML:
-                        ConfigValidator.RemoveChild(ymlVariables, variableInfo.FullName);
-                        ymlDataTreeListView.RemoveObject(variableInfo);
+                        variableInfo.Result = Result.OK;
+                        ConfigValidator.RemoveChild(variableInfo.FullName);
+                        VariableDataTreeListView.RemoveObject(variableInfo);
                         break;
                     case Result.TYPE_MISMATCH:
+                        variableInfo.Result = Result.OK;
+                        ConfigValidator.ModifyChild(variableInfo.FullName);
                         break;
                 }
             }
@@ -288,15 +291,12 @@ namespace ConfigFileAssistant_v1
             {
                 if (editedValues.Count>0)
                 {
-                    var result = MessageBox.Show("변경사항을 저장하시겠습니까?", "Log Message", MessageBoxButtons.OK);
-                    if (result == DialogResult.OK)
+                    foreach (var key in editedValues.Keys)
                     {
-                        ConfigValidator.UpdateCellValueToNode(editedValues, filePath);
-                        var newYamlVaraibles = ConfigValidator.ExtractYmlVariables();
-                        ConfigValidator.CompareVariables(csVariables, newYamlVaraibles);
-                        AddVariablesToDataGridView(newYamlVaraibles, ymlDataTreeListView);
-                        editedValues.Clear();
+                        ConfigValidator.UpdateChild(key,editedValues[key]);
                     }
+
+                    editedValues.Clear();
                 }
 
                 isEditMode = false; 
@@ -311,26 +311,7 @@ namespace ConfigFileAssistant_v1
 
         private void nextButton_Click(object sender, EventArgs e)
         {
-            if(isEditMode)
-            {
-                ConfigValidator.UpdateCellValueToNode(editedValues,filePath);
-                ymlVariables = ConfigValidator.ExtractYmlVariables();
-                ConfigValidator.CompareVariables(csVariables,ymlVariables);
-            }
-
-            if (ConfigValidator.HasError())
-            {
-                var result = MessageBox.Show("이대로 마이그레이션 하시겠습니까?", "Log Message", MessageBoxButtons.OK);
-                if (result == DialogResult.OK)
-                {
-                    ConfigValidator.MigrateVariables(csVariables, ymlVariables, filePath);
-                    this.Close();
-                }
-            }
-            else
-            {
-                this.Close();
-            }
+           
         }
 
         private void cancelButton_Click(object sender, EventArgs e)

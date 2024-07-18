@@ -1,25 +1,18 @@
 ﻿using CalibrationTool;
 using CoPick.Setting;
-using ScintillaNET;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Windows.Forms;
-using System.Xml.Linq;
-using YamlDotNet.Core.Tokens;
 using YamlDotNet.RepresentationModel;
+using ConfigTypeFinder;
 
 namespace ConfigFileAssistant_v1
 {
+    
     public class VariableInfo
     {
         public string Name { get; set; }
@@ -28,10 +21,29 @@ namespace ConfigFileAssistant_v1
         public string TypeName { get; set; }
         public object Value { get; set; }
         public Result Result { get; set; }
-        public string DefaultType {  get; set; }
         public string DefaultValue {  get; set; }   
         public List<VariableInfo> Children { get; set; }
-        
+        public bool IsEnumType {  get; set; }
+        public List<string> EnumValues { get; set; }
+        public void SetEnumValue(List<string> enumValues)
+        {
+            IsEnumType = true;
+            Result = Result.OK;
+            EnumValues = new List<string>();
+            foreach (string value in enumValues)
+            {
+                EnumValues.Add(value);
+            }
+            if(EnumValues.Count == 0)
+            {
+                Debug.WriteLine(Name);
+            }
+            else
+            {
+                
+            DefaultValue = EnumValues[0];
+            }
+        }
         public void AddChild(VariableInfo child)
         {
             
@@ -47,6 +59,7 @@ namespace ConfigFileAssistant_v1
             Children = new List<VariableInfo>();
             Value = value;
             Result = Result.OK;
+            IsEnumType = false;
         }
         public VariableInfo(string name, string typeName, object value)
         {
@@ -75,12 +88,19 @@ namespace ConfigFileAssistant_v1
     public class ConfigValidator
     {
         public static Object instance;
-        public static Dictionary<String,VariableInfo> errorVariableNames;
+        public static Dictionary<String, VariableInfo> errorVariableNames;
         public static YamlMappingNode root;
         public static YamlStream yaml;
         public static List<VariableInfo> csVariables;
         public static List<VariableInfo> ymlVariables;
+        public static Dictionary<string, Func<object, (bool, string)>> validatorFunctionArgs;
 
+        public static void Init()
+        {
+            instance = Activator.CreateInstance(typeof(Config));
+            validatorFunctionArgs = new Dictionary<string, Func<object, (bool, string)>>();
+            csVariables = new List<VariableInfo>();
+        }
         public static void LoadYamlFile(string filePath)
         {
             yaml = new YamlStream();
@@ -125,10 +145,10 @@ namespace ConfigFileAssistant_v1
                         ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, fullName);
                         variables.Add(childInfo);
                     }
-                    else if (entry.Value is YamlScalarNode scalarNode)
+                    else
                     {
                         var type = typeof(string);
-                        variables.Add(new VariableInfo(fullName, type, scalarNode.Value));
+                        variables.Add(new VariableInfo(fullName, type, (entry.Value)));
                     }
                 }
             }
@@ -166,9 +186,7 @@ namespace ConfigFileAssistant_v1
       
         public static List<VariableInfo> ExtractCsVariables()
         {
-            csVariables = new List<VariableInfo>();
             var type = typeof(Config);
-            instance = Activator.CreateInstance(typeof(Config));
 
             foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
@@ -193,14 +211,31 @@ namespace ConfigFileAssistant_v1
 
                         if (validatorAttributeData == null)
                         {
-                            variableInfo.Children.Add(new VariableInfo(enumField.Name, item.ToString(), ""));
-                            continue;
+                            Type type = typeof(string);
+                            var converterAttribute = enumField.GetCustomAttributes(typeof(TypeConverterAttribute), false).FirstOrDefault() as TypeConverterAttribute;
+                            if (converterAttribute != null)
+                            {
+                                if(converterAttribute.ConverterTypeName.Contains("Boolean"))
+                                {
+                                    type = typeof(bool);
+                                }
+                            }
+                            variableInfo.Children.Add(new VariableInfo(enumField.Name, type, ""));
+                            
                         }
-
-                        var constructorArguments = validatorAttributeData.ConstructorArguments;
-                        var validatorType = (ValidatorType)constructorArguments[0].Value;
-
-                        variableInfo.Children.Add(new VariableInfo(enumField.Name, validatorType.ToString(),""));
+                        else
+                        {
+                            var constructorArguments = validatorAttributeData.ConstructorArguments;
+                            var validatorType = (ValidatorType)constructorArguments[0].Value;
+                            var func = TypeFinder.MakeFunction(validatorType,constructorArguments[1].ToString());
+                            
+                            if(!validatorFunctionArgs.ContainsKey(enumField.Name))
+                            {
+                                validatorFunctionArgs.Add(enumField.Name, func);
+                            }
+                            variableInfo.Children.Add(new VariableInfo(enumField.Name, validatorType.ToString(), ""));
+                        }
+                        
                     }
                 }
                 variables.Add(variableInfo);
@@ -226,6 +261,7 @@ namespace ConfigFileAssistant_v1
             }
             variables.Add(variableInfo);
         }
+        
         public static object GetDefaultValue(PropertyInfo property, object instance)
         {
             var defaultValueAttribute = property.GetCustomAttribute<DefaultValueAttribute>();
@@ -247,16 +283,18 @@ namespace ConfigFileAssistant_v1
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
             errorVariableNames = new Dictionary<string,VariableInfo>();
-            var resultDict = ymlVariables.ToDictionary(v => v.Name);
+            var ymlDict = ymlVariables.ToDictionary(v => v.Name);
 
             foreach (var csVariable in csVariables)
             {
-                if (resultDict.TryGetValue(csVariable.Name, out var ymlVariable))
+                if (ymlDict.TryGetValue(csVariable.Name, out var ymlVariable))
                 {
-                    if((csVariable.Type.IsGenericType || ymlVariable.Type.IsGenericType) && !csVariable.TypeName.Equals(ymlVariable.TypeName))
+                    if(csVariable.TypeName != ymlVariable.TypeName && ymlVariable.Type != typeof(string))
                     {
                         ymlVariable.Result = Result.TYPE_MISMATCH;
-                        ymlVariable.DefaultType = csVariable.TypeName;
+                        ymlVariable.Type = csVariable.Type;
+                        ymlVariable.TypeName = csVariable.TypeName;
+                        ymlVariable.DefaultValue = csVariable.Value.ToString();
                         errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
                     }
                     else
@@ -287,15 +325,31 @@ namespace ConfigFileAssistant_v1
         }
         private static void CompareChild(VariableInfo csVariable, VariableInfo ymlVariable, VariableInfo csParentVariable)
         {
+
+            // 둘다 자식이 있는 경우
             if (csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                foreach (var child in ymlVariable.Children)
+                if(csVariable.TypeName == ymlVariable.TypeName)
                 {
-                    CompareChild(csVariable.Children.Last(), child, csVariable);
+                    foreach (var child in ymlVariable.Children)
+                    {
+                        CompareChild(csVariable.Children.Last(), child, csVariable);
+                    }
                 }
+                else
+                {
+                    ymlVariable.Result = Result.TYPE_MISMATCH;
+                    ymlVariable.DefaultValue = csVariable.Value.ToString();
+                    ymlVariable.Type = csVariable.Type;
+                    ymlVariable.TypeName = csVariable.TypeName;
+                    errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
+                }
+                
             }
+            // cs에는 있고 yml에는 없는 경우
             else if (csVariable.HasChildren() && !ymlVariable.HasChildren())
             {
+                // cs가 enum 타입일 경우
                 if (csVariable.Type.IsEnum)
                 {
                     ymlVariable.Result = Result.TYPE_MISMATCH;
@@ -303,49 +357,70 @@ namespace ConfigFileAssistant_v1
                     {
                         if (ymlVariable.Value.ToString().Equals(item.Name))
                         {
-                            ymlVariable.Result = Result.OK;
-                            ymlVariable.Type = csVariable.Type;
-                            ymlVariable.TypeName = csVariable.TypeName;
+                            ymlVariable.Type = item.Type;
+                            ymlVariable.TypeName = item.TypeName;
+                            if (TypeFinder.IsValidateType(validatorFunctionArgs,ymlVariable.Name, ymlVariable.Value.ToString()))
+                            {
+                                List<string> values = csVariable.Children.Select(child => child.Name).ToList();
+                                ymlVariable.SetEnumValue(values);
+                            }
                             break;
                         }
                     }
                     if(ymlVariable.Result == Result.TYPE_MISMATCH) 
                     {
                         errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
-
+                        ymlVariable.Type = csVariable.Type;
+                        ymlVariable.TypeName = csVariable.TypeName;
+                        ymlVariable.DefaultValue = csVariable.Value.ToString();
                     }
                 }
-                else if (!csVariable.TypeName.Equals(ymlVariable.TypeName))
-                {
-                    ymlVariable.Result = Result.TYPE_MISMATCH;
-                    ymlVariable.DefaultType = csVariable.TypeName;
-                    errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
-                }
+                // cs가 enum 타입이 아닐 경우
                 else
                 {
-                    ymlVariable.Result = Result.OK;
+                    if(ymlVariable.Value.ToString() != string.Empty)
+                    {
+                        ymlVariable.Result = Result.TYPE_MISMATCH;
+                        ymlVariable.DefaultValue = csVariable.Value.ToString();
+                    }
+                    ymlVariable.TypeName = csVariable.TypeName;
+                    ymlVariable.Type = csVariable.Type;
                 }
-                
             }
+            // cs에는 없고 yml에는 있는 경우
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
                 ymlVariable.Result = Result.TYPE_MISMATCH;
-                ymlVariable.DefaultType = csVariable.TypeName;
+                ymlVariable.Type = csVariable.Type;
+                ymlVariable.TypeName= csVariable.TypeName;
+                ymlVariable.DefaultValue = csVariable.Value.ToString();
                 errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
             }
+            // 둘다 자식이 없는 경우
             else
             {
-                if (csParentVariable != null) 
+                // cs값이 enum 값 중 하나인 경우
+                if (csParentVariable != null)
                 {
                     ymlVariable.Result = Result.ONLY_IN_YML;
                     var variable = csParentVariable.Children.First();
-                    foreach(var v in variable.Children)
+                    foreach (var v in variable.Children)
                     {
                         if(ymlVariable.Name.Equals(v.Name))
                         {
-                            ymlVariable.Result = Result.OK;
-                            ymlVariable.Type = csVariable.Type;
-                            ymlVariable.TypeName = csVariable.TypeName;
+                            ymlVariable.Type = v.Type;
+                            ymlVariable.TypeName = v.TypeName;
+                            if (TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name,ymlVariable.Value.ToString()))
+                            {
+                                List<string> values = csVariable.Children.Select(child => child.Name).ToList();
+                                ymlVariable.SetEnumValue(values);
+
+                            }
+                            else
+                            {
+                                ymlVariable.Result = Result.TYPE_MISMATCH;
+                                ymlVariable.DefaultValue = csVariable.Value.ToString();
+                            }
                             break;
                         }
                     }
@@ -354,12 +429,20 @@ namespace ConfigFileAssistant_v1
                         errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
                     }
                 }
+                // 둘다 단일 값인 경우
+                else
+                {
+                    ymlVariable.Type = csVariable.Type;
+                    ymlVariable.TypeName = csVariable.TypeName;
+                    // 값 타입 검증
+                    if (!TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name, ymlVariable.Value.ToString()))
+                    {
+                        ymlVariable.Result = Result.TYPE_MISMATCH;
+                        ymlVariable.DefaultValue = csVariable.Value.ToString();
+                    }
+                    
+                }
             }
-        }
-
-        public static bool HasError()
-        {
-            return errorVariableNames.Count > 0;
         }
         
         public static List<VariableInfo> FindParent(string fullName)
@@ -403,7 +486,6 @@ namespace ConfigFileAssistant_v1
                     Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
                 }
             }
-            
         }
 
         public static void ModifyChild(string fullName)
@@ -455,10 +537,8 @@ namespace ConfigFileAssistant_v1
                 {
                     Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
                 }
-            }
-            
+            }   
         }
-        
         private static void MakeBackup(string filePath)
         {
             string backupFolder = Path.Combine(Path.GetDirectoryName(filePath), "configbackup");

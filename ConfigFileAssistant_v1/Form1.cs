@@ -162,13 +162,14 @@ namespace ConfigFileAssistant_v1
 
         private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)
         {
-            VariableInfo variable = (VariableInfo)e.RowObject;
-            if (variable.TypeName == typeof(string).Name)
+            VariableInfo variableInfo = (VariableInfo)e.RowObject;
+            if (variableInfo.TypeName == typeof(string).Name)
             {
                 e.Cancel = false;
                 e.Control.Bounds = e.CellBounds;
                 e.Control.Width = e.CellBounds.Width;
                 e.Control.Height = e.CellBounds.Height;
+                
             }
             else
             {
@@ -176,6 +177,8 @@ namespace ConfigFileAssistant_v1
             }
             
         }
+
+        
         private void DataTreeListView_CellEditFinishing(object sender, CellEditEventArgs e)
         {
             VariableInfo variable = (VariableInfo)e.RowObject;
@@ -263,7 +266,7 @@ namespace ConfigFileAssistant_v1
                 return;
 
             var variableInfo = (VariableInfo)e.Model;
-            if (variableInfo.Result != Result.OK && e.ColumnIndex == 0)
+            if (variableInfo.Result != Result.OK)
             {
                 switch(variableInfo.Result) 
                 { 
@@ -283,6 +286,33 @@ namespace ConfigFileAssistant_v1
                         break;
                 }
             }
+            else if(variableInfo.IsEnumType && e.ColumnIndex == 2)
+            {
+                ShowEnumComboBox(e, variableInfo);
+            }
+        }
+        private void ShowEnumComboBox(CellClickEventArgs e, VariableInfo variableInfo)
+        {
+            ComboBox comboBox = new ComboBox
+            {
+                DataSource = variableInfo.EnumValues,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+
+            // Position the ComboBox over the cell
+            var cellRectangle = VariableDataTreeListView.GetSubItem(e.RowIndex, e.ColumnIndex).Bounds;
+            if (cellRectangle != Rectangle.Empty)
+            {
+                comboBox.Bounds = cellRectangle;
+                VariableDataTreeListView.Controls.Add(comboBox);
+                comboBox.BringToFront();
+                comboBox.Focus();
+            }
+
+            comboBox.LostFocus += (s, ev) =>
+            {
+                VariableDataTreeListView.Controls.Remove(comboBox);
+            };
         }
 
         private void ModeRadioButton_CheckedChanged(object sender, EventArgs e)

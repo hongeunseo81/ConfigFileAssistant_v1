@@ -15,17 +15,18 @@ namespace ConfigFileAssistant_v1
         [STAThread]
         static void Main()
         {
+            ConfigValidator.Init();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
 
-          /*  var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
+            /*var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
+            ConfigValidator.Init();
+            ConfigValidator.LoadYamlFile(filePath);
             var csVariables = ConfigValidator.ExtractCsVariables();
-
             var ymlVariables = ConfigValidator.ExtractYmlVariables();
-            var result = ConfigValidator.CompareVariables(csVariables, ymlVariables);
-            ConfigValidator.RemoveChild(result,"CameraConfigs.REAR.[0].Ips");*/
-
+            ConfigValidator.CompareVariables(csVariables, ymlVariables);
+           */
             // ConfigValidator.MigrateVariables(csVariables, result, filePath);
 
         }

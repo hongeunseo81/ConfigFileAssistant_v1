@@ -37,10 +37,8 @@
             this.expandAllButton = new System.Windows.Forms.Button();
             this.treeModeRadioButton = new System.Windows.Forms.RadioButton();
             this.editModeRadioButton = new System.Windows.Forms.RadioButton();
-            this.dataTreeListView1 = new BrightIdeasSoftware.DataTreeListView();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.VariableDataTreeListView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -48,7 +46,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1869, 69);
+            this.panel1.Size = new System.Drawing.Size(883, 69);
             this.panel1.TabIndex = 2;
             // 
             // panel2
@@ -62,7 +60,7 @@
             // 
             // nextButton
             // 
-            this.nextButton.Location = new System.Drawing.Point(744, 24);
+            this.nextButton.Location = new System.Drawing.Point(711, 24);
             this.nextButton.Name = "nextButton";
             this.nextButton.Size = new System.Drawing.Size(134, 46);
             this.nextButton.TabIndex = 1;
@@ -72,7 +70,7 @@
             // 
             // cancelButton
             // 
-            this.cancelButton.Location = new System.Drawing.Point(604, 24);
+            this.cancelButton.Location = new System.Drawing.Point(559, 24);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(134, 46);
             this.cancelButton.TabIndex = 0;
@@ -96,7 +94,7 @@
             this.VariableDataTreeListView.OwnerDrawnHeader = true;
             this.VariableDataTreeListView.RootKeyValueString = "";
             this.VariableDataTreeListView.ShowGroups = false;
-            this.VariableDataTreeListView.Size = new System.Drawing.Size(851, 681);
+            this.VariableDataTreeListView.Size = new System.Drawing.Size(818, 681);
             this.VariableDataTreeListView.TabIndex = 5;
             this.VariableDataTreeListView.UseCompatibleStateImageBehavior = false;
             this.VariableDataTreeListView.UseFiltering = true;
@@ -116,7 +114,7 @@
             // 
             this.treeModeRadioButton.AutoSize = true;
             this.treeModeRadioButton.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.treeModeRadioButton.Location = new System.Drawing.Point(661, 137);
+            this.treeModeRadioButton.Location = new System.Drawing.Point(618, 137);
             this.treeModeRadioButton.Name = "treeModeRadioButton";
             this.treeModeRadioButton.Size = new System.Drawing.Size(99, 20);
             this.treeModeRadioButton.TabIndex = 7;
@@ -129,7 +127,7 @@
             // 
             this.editModeRadioButton.AutoSize = true;
             this.editModeRadioButton.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.editModeRadioButton.Location = new System.Drawing.Point(777, 137);
+            this.editModeRadioButton.Location = new System.Drawing.Point(744, 137);
             this.editModeRadioButton.Name = "editModeRadioButton";
             this.editModeRadioButton.Size = new System.Drawing.Size(97, 20);
             this.editModeRadioButton.TabIndex = 8;
@@ -138,36 +136,12 @@
             this.editModeRadioButton.UseVisualStyleBackColor = true;
             this.editModeRadioButton.CheckedChanged += new System.EventHandler(this.ModeRadioButton_CheckedChanged);
             // 
-            // dataTreeListView1
-            // 
-            this.dataTreeListView1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.dataTreeListView1.CellEditUseWholeCell = false;
-            this.dataTreeListView1.DataSource = null;
-            this.dataTreeListView1.Font = new System.Drawing.Font("굴림", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.dataTreeListView1.FullRowSelect = true;
-            this.dataTreeListView1.GridLines = true;
-            this.dataTreeListView1.HeaderUsesThemes = true;
-            this.dataTreeListView1.HeaderWordWrap = true;
-            this.dataTreeListView1.HideSelection = false;
-            this.dataTreeListView1.Location = new System.Drawing.Point(931, 163);
-            this.dataTreeListView1.Name = "dataTreeListView1";
-            this.dataTreeListView1.OwnerDrawnHeader = true;
-            this.dataTreeListView1.RootKeyValueString = "";
-            this.dataTreeListView1.ShowGroups = false;
-            this.dataTreeListView1.Size = new System.Drawing.Size(851, 681);
-            this.dataTreeListView1.TabIndex = 9;
-            this.dataTreeListView1.UseCompatibleStateImageBehavior = false;
-            this.dataTreeListView1.UseFiltering = true;
-            this.dataTreeListView1.View = System.Windows.Forms.View.Details;
-            this.dataTreeListView1.VirtualMode = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(1869, 986);
-            this.Controls.Add(this.dataTreeListView1);
+            this.ClientSize = new System.Drawing.Size(883, 986);
             this.Controls.Add(this.editModeRadioButton);
             this.Controls.Add(this.treeModeRadioButton);
             this.Controls.Add(this.expandAllButton);
@@ -179,7 +153,6 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.VariableDataTreeListView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -195,7 +168,6 @@
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.RadioButton treeModeRadioButton;
         private System.Windows.Forms.RadioButton editModeRadioButton;
-        private BrightIdeasSoftware.DataTreeListView dataTreeListView1;
     }
 }
 

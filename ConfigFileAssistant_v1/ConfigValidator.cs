@@ -9,6 +9,8 @@ using System.Linq;
 using System.Reflection;
 using YamlDotNet.RepresentationModel;
 using ConfigTypeFinder;
+using YamlDotNet.Serialization.NamingConventions;
+using YamlDotNet.Serialization;
 
 namespace ConfigFileAssistant_v1
 {
@@ -34,20 +36,16 @@ namespace ConfigFileAssistant_v1
             {
                 EnumValues.Add(value);
             }
-            if(EnumValues.Count == 0)
-            {
-                Debug.WriteLine(Name);
-            }
-            else
-            {
-                
-            DefaultValue = EnumValues[0];
-            }
-        }
-        public void AddChild(VariableInfo child)
-        {
             
-            Children.Add(child);
+        }
+        public void SetResultOK()
+        {
+            Result = Result.OK;
+            if(EnumValues != null)
+            {
+                IsEnumType = true;
+                DefaultValue = EnumValues[0];
+            }
         }
 
         public VariableInfo(string name, Type type, object value)
@@ -291,10 +289,15 @@ namespace ConfigFileAssistant_v1
                 {
                     if(csVariable.TypeName != ymlVariable.TypeName && ymlVariable.Type != typeof(string))
                     {
-                        ymlVariable.Result = Result.TYPE_MISMATCH;
                         ymlVariable.Type = csVariable.Type;
                         ymlVariable.TypeName = csVariable.TypeName;
                         ymlVariable.DefaultValue = csVariable.Value.ToString();
+                        if (csVariable.Type.IsEnum)
+                        {
+                            List<string> values = csVariable.Children.Select(child => child.Name).ToList();
+                            ymlVariable.SetEnumValue(values);
+                        }
+                        ymlVariable.Result = Result.TYPE_MISMATCH;
                         errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
                     }
                     else
@@ -305,6 +308,11 @@ namespace ConfigFileAssistant_v1
                 else
                 {
                     var variable = new VariableInfo(csVariable.Name, csVariable.Type, csVariable.Value);
+                    if (csVariable.Type.IsEnum)
+                    {
+                        List<string> values = csVariable.Children.Select(child => child.Name).ToList();
+                        variable.SetEnumValue(values);
+                    }
                     variable.Result = Result.ONLY_IN_CS;
                     ymlVariables.Add(variable); 
                     errorVariableNames.Add(variable.FullName, variable);
@@ -329,7 +337,7 @@ namespace ConfigFileAssistant_v1
             // 둘다 자식이 있는 경우
             if (csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                if(csVariable.TypeName == ymlVariable.TypeName)
+                if (csVariable.TypeName == ymlVariable.TypeName)
                 {
                     foreach (var child in ymlVariable.Children)
                     {
@@ -367,8 +375,9 @@ namespace ConfigFileAssistant_v1
                             break;
                         }
                     }
-                    if(ymlVariable.Result == Result.TYPE_MISMATCH) 
+                    if(ymlVariable.Result == Result.TYPE_MISMATCH)
                     {
+                        Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                         errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                         ymlVariable.Type = csVariable.Type;
                         ymlVariable.TypeName = csVariable.TypeName;
@@ -378,8 +387,9 @@ namespace ConfigFileAssistant_v1
                 // cs가 enum 타입이 아닐 경우
                 else
                 {
-                    if(ymlVariable.Value.ToString() != string.Empty)
+                    if (ymlVariable.Value.ToString() != string.Empty)
                     {
+                        Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                         ymlVariable.Result = Result.TYPE_MISMATCH;
                         ymlVariable.DefaultValue = csVariable.Value.ToString();
                     }
@@ -390,10 +400,12 @@ namespace ConfigFileAssistant_v1
             // cs에는 없고 yml에는 있는 경우
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
+                Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                 ymlVariable.Result = Result.TYPE_MISMATCH;
                 ymlVariable.Type = csVariable.Type;
                 ymlVariable.TypeName= csVariable.TypeName;
                 ymlVariable.DefaultValue = csVariable.Value.ToString();
+                
                 errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
             }
             // 둘다 자식이 없는 경우
@@ -412,12 +424,12 @@ namespace ConfigFileAssistant_v1
                             ymlVariable.TypeName = v.TypeName;
                             if (TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name,ymlVariable.Value.ToString()))
                             {
-                                List<string> values = csVariable.Children.Select(child => child.Name).ToList();
-                                ymlVariable.SetEnumValue(values);
+                                 ymlVariable.Result = Result.OK;
 
                             }
                             else
                             {
+                                Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                                 ymlVariable.Result = Result.TYPE_MISMATCH;
                                 ymlVariable.DefaultValue = csVariable.Value.ToString();
                             }
@@ -429,11 +441,11 @@ namespace ConfigFileAssistant_v1
                         errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
                     }
                 }
-                // 둘다 단일 값인 경우
                 else
                 {
                     ymlVariable.Type = csVariable.Type;
                     ymlVariable.TypeName = csVariable.TypeName;
+
                     // 값 타입 검증
                     if (!TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name, ymlVariable.Value.ToString()))
                     {
@@ -463,8 +475,35 @@ namespace ConfigFileAssistant_v1
             }
             return parent;
         }
-        public static void RemoveChild(string fullName)
+
+        public static void AddChild (VariableInfo variableInfo)
         {
+            var fullName = variableInfo.FullName;
+            var targetVar = ymlVariables.Find(x => x.FullName == fullName);
+            if (targetVar != null)
+            {
+                targetVar.SetResultOK();
+            }
+            else
+            {
+                var parent = FindParent(fullName);
+                var names = fullName.Split('.');
+                int depth = names.Length;
+                var targetName = names[depth - 1];
+                targetVar = parent.Find(v => v.Name == targetName);
+                if (targetVar != null)
+                {
+                    targetVar.SetResultOK();
+                }
+                else
+                {
+                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
+                }
+            }
+        }
+        public static void RemoveChild(VariableInfo variableInfo)
+        {
+            var fullName = variableInfo.FullName;   
             var targetVar = ymlVariables.Find(x => x.FullName == fullName);
             if(targetVar != null)
             {
@@ -488,12 +527,18 @@ namespace ConfigFileAssistant_v1
             }
         }
 
-        public static void ModifyChild(string fullName)
+        public static void ModifyChild(VariableInfo variableInfo)
         {
+            var fullName = variableInfo.FullName;
             var targetVar = ymlVariables.Find(x => x.FullName == fullName);
             if (targetVar != null)
             {
-                targetVar.Value = "default";
+                if(targetVar.Children != null)
+                {
+                    targetVar.SetResultOK();
+                    targetVar.Children.Clear();
+                }
+                targetVar.Value = targetVar.DefaultValue;
             }
             else
             {
@@ -505,7 +550,12 @@ namespace ConfigFileAssistant_v1
                 targetVar = parent.Find(v => v.Name == targetName);
                 if (targetVar != null)
                 {
-                    targetVar.Value = "default";
+                    if (targetVar.Children != null)
+                    {
+                        targetVar.SetResultOK();
+                        targetVar.Children.Clear();
+                    }
+                    targetVar.Value = targetVar.DefaultValue;
                 }
                 else
                 {
@@ -521,8 +571,13 @@ namespace ConfigFileAssistant_v1
             var targetVar = ymlVariables.Find(x=>x.FullName == fullName);
             if(targetVar != null)
             {
-                // 값 검증 필요
                 targetVar.Value = value;
+                // 값 검증 필요
+                if (!TypeFinder.IsValidateType(validatorFunctionArgs,targetVar.Name,value))
+                {
+                    targetVar.Result = Result.TYPE_MISMATCH;
+                }
+                
             }
             else
             {
@@ -531,13 +586,21 @@ namespace ConfigFileAssistant_v1
                 targetVar = parent.Find(v => v.Name == targetName);
                 if (targetVar != null)
                 {
-                    targetVar.Value = value;
+                    // 값 검증 필요
+                    if (!TypeFinder.IsValidateType(validatorFunctionArgs, targetVar.Name, value))
+                    {
+                        targetVar.Result = Result.TYPE_MISMATCH;
+                    }
                 }
                 else
                 {
                     Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
                 }
             }   
+        }
+        public static void MakeYamlFile(List<VariableInfo> variables, string filePath)
+        {
+            
         }
         private static void MakeBackup(string filePath)
         {

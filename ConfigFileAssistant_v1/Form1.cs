@@ -71,7 +71,6 @@ namespace ConfigFileAssistant_v1
             VariableDataTreeListView.CellEditStarting += DataTreeListView_CellEditStarting;
             VariableDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
             AddVariablesToDataGridView(resultVariables, VariableDataTreeListView);
-            AddVariablesToDataGridView(csVariables, dataTreeListView1);
         }
 
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
@@ -83,14 +82,14 @@ namespace ConfigFileAssistant_v1
 
             if (objectListView.AllColumns.Count == 0)
             {
-                OLVColumn nameColumn = new OLVColumn("FullName", "FullName")
+                OLVColumn nameColumn = new OLVColumn("Name", "Name")
                 {
-                    AspectName = "FullName",
+                    AspectName = "Name",
                     Width = 300,
                     AspectGetter = delegate (object rowObject)
                     {
                         var variableInfo = (VariableInfo)rowObject;
-                        return variableInfo.FullName;
+                        return variableInfo.Name;
                     },
                     ImageGetter = delegate (object rowObject)
                     {
@@ -113,8 +112,8 @@ namespace ConfigFileAssistant_v1
                 };
 
                 objectListView.AllColumns.Add(nameColumn);
-                objectListView.AllColumns.Add(new OLVColumn("Type", "Type") { AspectName = "TypeName", Width = 300 });
-                objectListView.AllColumns.Add(new OLVColumn("Value", "Value") { AspectName = "Value", Width = 300 });
+                objectListView.AllColumns.Add(new OLVColumn("Type", "Type") { AspectName = "TypeName", Width = 250 });
+                objectListView.AllColumns.Add(new OLVColumn("Value", "Value") { AspectName = "Value", Width = 250 });
 
                 objectListView.FormatRow += paintRows;
                 objectListView.RebuildColumns();
@@ -163,7 +162,7 @@ namespace ConfigFileAssistant_v1
         private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)
         {
             VariableInfo variableInfo = (VariableInfo)e.RowObject;
-            if (variableInfo.TypeName == typeof(string).Name)
+            if (variableInfo.TypeName != typeof(Dictionary<,>).Name && variableInfo.TypeName != typeof(List<>).Name)
             {
                 e.Cancel = false;
                 e.Control.Bounds = e.CellBounds;
@@ -189,26 +188,12 @@ namespace ConfigFileAssistant_v1
                 {
                     if (!string.IsNullOrEmpty(e.NewValue as string))
                     {
-                        if (editedValues.ContainsKey(variable.FullName))
-                        {
-                            editedValues[variable.FullName] = e.NewValue as string;
-                        }
-                        else
-                        {
-                            editedValues.Add(variable.FullName, e.NewValue as string);
-                        }
+                        ConfigValidator.UpdateChild(variable.FullName,e.NewValue as string);
                     }
                 }
                 else if (!e.Value.Equals(e.NewValue))
                 {
-                    if (editedValues.ContainsKey(variable.FullName))
-                    {
-                        editedValues[variable.FullName] = e.NewValue as string;
-                    }
-                    else
-                    {
-                        editedValues.Add(variable.FullName, e.NewValue as string);
-                    }
+                    ConfigValidator.UpdateChild(variable.FullName, e.NewValue as string);
                 }
             }
         }
@@ -277,12 +262,21 @@ namespace ConfigFileAssistant_v1
                         break;
                     case Result.ONLY_IN_YML:
                         variableInfo.Result = Result.OK;
-                        ConfigValidator.RemoveChild(variableInfo.FullName);
+                        ConfigValidator.RemoveChild(variableInfo);
                         VariableDataTreeListView.RemoveObject(variableInfo);
                         break;
                     case Result.TYPE_MISMATCH:
                         variableInfo.Result = Result.OK;
-                        ConfigValidator.ModifyChild(variableInfo.FullName);
+                        if(variableInfo.HasChildren())
+                        {
+                            VariableDataTreeListView.RemoveObject(variableInfo);
+                            ConfigValidator.ModifyChild(variableInfo);
+                            VariableDataTreeListView.AddObject(variableInfo);
+                        }
+                        else
+                        {
+                            ConfigValidator.ModifyChild(variableInfo);
+                        }
                         break;
                 }
             }
@@ -299,7 +293,6 @@ namespace ConfigFileAssistant_v1
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
 
-            // Position the ComboBox over the cell
             var cellRectangle = VariableDataTreeListView.GetSubItem(e.RowIndex, e.ColumnIndex).Bounds;
             if (cellRectangle != Rectangle.Empty)
             {
@@ -341,7 +334,12 @@ namespace ConfigFileAssistant_v1
 
         private void nextButton_Click(object sender, EventArgs e)
         {
-           
+            var result = MessageBox.Show("이대로 진행하시겠습니까?", "Log Message", MessageBoxButtons.OK);
+            if (result == DialogResult.OK)
+            {
+                ConfigValidator.MakeYamlFile(ymlVariables, filePath);
+                this.Close();
+            }
         }
 
         private void cancelButton_Click(object sender, EventArgs e)

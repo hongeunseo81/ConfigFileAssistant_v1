@@ -367,7 +367,7 @@ namespace ConfigFileAssistant_v1
                         {
                             ymlVariable.Type = item.Type;
                             ymlVariable.TypeName = item.TypeName;
-                            if (TypeFinder.IsValidateType(validatorFunctionArgs,ymlVariable.Name, ymlVariable.Value.ToString()))
+                            if (TypeFinder.IsValidateType(validatorFunctionArgs,ymlVariable.Name, ymlVariable.Type, ymlVariable.Value.ToString()))
                             {
                                 List<string> values = csVariable.Children.Select(child => child.Name).ToList();
                                 ymlVariable.SetEnumValue(values);
@@ -377,7 +377,6 @@ namespace ConfigFileAssistant_v1
                     }
                     if(ymlVariable.Result == Result.TYPE_MISMATCH)
                     {
-                        Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                         errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                         ymlVariable.Type = csVariable.Type;
                         ymlVariable.TypeName = csVariable.TypeName;
@@ -389,9 +388,9 @@ namespace ConfigFileAssistant_v1
                 {
                     if (ymlVariable.Value.ToString() != string.Empty)
                     {
-                        Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                         ymlVariable.Result = Result.TYPE_MISMATCH;
                         ymlVariable.DefaultValue = csVariable.Value.ToString();
+                        errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                     }
                     ymlVariable.TypeName = csVariable.TypeName;
                     ymlVariable.Type = csVariable.Type;
@@ -400,7 +399,6 @@ namespace ConfigFileAssistant_v1
             // cs에는 없고 yml에는 있는 경우
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                 ymlVariable.Result = Result.TYPE_MISMATCH;
                 ymlVariable.Type = csVariable.Type;
                 ymlVariable.TypeName= csVariable.TypeName;
@@ -422,16 +420,16 @@ namespace ConfigFileAssistant_v1
                         {
                             ymlVariable.Type = v.Type;
                             ymlVariable.TypeName = v.TypeName;
-                            if (TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name,ymlVariable.Value.ToString()))
+                            if (TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name,ymlVariable.Type, ymlVariable.Value.ToString()))
                             {
                                  ymlVariable.Result = Result.OK;
 
                             }
                             else
                             {
-                                Debug.WriteLine(csVariable.Name + ":" + ymlVariable.Name);
                                 ymlVariable.Result = Result.TYPE_MISMATCH;
                                 ymlVariable.DefaultValue = csVariable.Value.ToString();
+                                errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                             }
                             break;
                         }
@@ -447,16 +445,25 @@ namespace ConfigFileAssistant_v1
                     ymlVariable.TypeName = csVariable.TypeName;
 
                     // 값 타입 검증
-                    if (!TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name, ymlVariable.Value.ToString()))
+                    if (!TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name, ymlVariable.Type, ymlVariable.Value.ToString()))
                     {
                         ymlVariable.Result = Result.TYPE_MISMATCH;
                         ymlVariable.DefaultValue = csVariable.Value.ToString();
+                        errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                     }
                     
                 }
             }
         }
         
+        public static bool HasError()
+        {
+            foreach(var error in errorVariableNames.Keys) 
+            {
+                Debug.WriteLine(errorVariableNames[error].FullName);
+            }
+            return errorVariableNames.Count > 0;    
+        }
         public static List<VariableInfo> FindParent(string fullName)
         {
             var names = fullName.Split('.');
@@ -483,6 +490,7 @@ namespace ConfigFileAssistant_v1
             if (targetVar != null)
             {
                 targetVar.SetResultOK();
+                errorVariableNames.Remove(fullName);
             }
             else
             {
@@ -494,10 +502,11 @@ namespace ConfigFileAssistant_v1
                 if (targetVar != null)
                 {
                     targetVar.SetResultOK();
+                    errorVariableNames.Remove(fullName);
                 }
                 else
                 {
-                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
+                    Debug.WriteLine($"{fullName} 변수를 찾을 수 없습니다: ");
                 }
             }
         }
@@ -508,6 +517,7 @@ namespace ConfigFileAssistant_v1
             if(targetVar != null)
             {
                 ymlVariables.Remove(targetVar);
+                errorVariableNames.Remove(fullName);
             }
             else
             {
@@ -519,10 +529,11 @@ namespace ConfigFileAssistant_v1
                 if (targetVar != null)
                 {
                     parent.Remove(targetVar);
+                    errorVariableNames.Remove(fullName);
                 }
                 else
                 {
-                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
+                    Debug.WriteLine($"{fullName} 변수를 찾을 수 없습니다: ");
                 }
             }
         }
@@ -535,10 +546,11 @@ namespace ConfigFileAssistant_v1
             {
                 if(targetVar.Children != null)
                 {
-                    targetVar.SetResultOK();
                     targetVar.Children.Clear();
                 }
+                targetVar.SetResultOK();
                 targetVar.Value = targetVar.DefaultValue;
+                errorVariableNames.Remove(fullName);
             }
             else
             {
@@ -552,14 +564,15 @@ namespace ConfigFileAssistant_v1
                 {
                     if (targetVar.Children != null)
                     {
-                        targetVar.SetResultOK();
                         targetVar.Children.Clear();
                     }
+                    targetVar.SetResultOK();
+                    errorVariableNames.Remove(fullName);
                     targetVar.Value = targetVar.DefaultValue;
                 }
                 else
                 {
-                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
+                    Debug.WriteLine($"{fullName} 변수를 찾을 수 없습니다: ");
                 }
             }
         }
@@ -573,9 +586,17 @@ namespace ConfigFileAssistant_v1
             {
                 targetVar.Value = value;
                 // 값 검증 필요
-                if (!TypeFinder.IsValidateType(validatorFunctionArgs,targetVar.Name,value))
+                if (!TypeFinder.IsValidateType(validatorFunctionArgs,targetVar.Name,targetVar.Type,value))
                 {
                     targetVar.Result = Result.TYPE_MISMATCH;
+                    if(!errorVariableNames.ContainsKey(fullName)) 
+                    {
+                        errorVariableNames.Add(fullName, targetVar);
+                    }
+                }
+                else
+                {
+                    errorVariableNames.Remove(fullName);
                 }
                 
             }
@@ -587,17 +608,26 @@ namespace ConfigFileAssistant_v1
                 if (targetVar != null)
                 {
                     // 값 검증 필요
-                    if (!TypeFinder.IsValidateType(validatorFunctionArgs, targetVar.Name, value))
+                    if (!TypeFinder.IsValidateType(validatorFunctionArgs, targetVar.Name, targetVar.Type, value))
                     {
-                        targetVar.Result = Result.TYPE_MISMATCH;
+                        targetVar.Result = Result.TYPE_MISMATCH; 
+                        if (!errorVariableNames.ContainsKey(fullName))
+                        {
+                            errorVariableNames.Add(fullName, targetVar);
+                        }
+                    }
+                    else
+                    {
+                        errorVariableNames.Remove(fullName);
                     }
                 }
                 else
                 {
-                    Debug.WriteLine("변수를 찾을 수 없습니다: " + targetName);
+                    Debug.WriteLine($"{fullName} 변수를 찾을 수 없습니다");
                 }
             }   
         }
+        
         public static void MakeYamlFile(List<VariableInfo> variables, string filePath)
         {
             

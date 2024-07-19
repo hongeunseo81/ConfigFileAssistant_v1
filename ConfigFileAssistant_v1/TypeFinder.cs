@@ -1,4 +1,5 @@
-﻿using CoPick.Setting;
+﻿using ConfigFileAssistant_v1;
+using CoPick.Setting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,11 +50,15 @@ namespace ConfigTypeFinder
             }
             return null;
         }
-        public static bool IsValidateType(Dictionary<string, Func<object, (bool, string)>> validatorFunctionArgs,String name, string value)
+        public static bool IsValidateType(Dictionary<string, Func<object, (bool, string)>> validatorFunctionArgs,string name, Type type,string value)
         {
             if (value == "")
             {
                 return true;
+            }
+            if(type == typeof(bool))
+            {
+                return (value == "True" || value == "False") ? true : false;
             }
             if (validatorFunctionArgs.TryGetValue(name, out var validatorFunc))
             {

@@ -15,7 +15,7 @@ namespace ConfigFileAssistant_v1
         private List<VariableInfo> csVariables;
         private List<VariableInfo> ymlVariables;
         private List<VariableInfo> resultVariables;
-        private Dictionary<string,string> editedValues;
+        private Dictionary<string, string> editedValues;
 
         private Config conf;
         private ImageList imageList;
@@ -40,25 +40,25 @@ namespace ConfigFileAssistant_v1
             buttonImageList = new ImageList();
             buttonImageList.ImageSize = new Size(30, 30);
             buttonImageList.Images.Add("collapse", CollapseImageButton);
-            buttonImageList.Images.Add("expand",ExpandImageButton);
+            buttonImageList.Images.Add("expand", ExpandImageButton);
             expandAllButton.ImageList = buttonImageList;
             expandAllButton.Image = buttonImageList.Images[0];
-            
+
             imageList = new ImageList();
             imageList.ImageSize = new Size(16, 16);
             imageList.Images.Add("plus", PlusImageButton);
             imageList.Images.Add("minus", MinusImageButton);
             imageList.Images.Add("caution", CautionImageButton);
-           
+
         }
-        
+
 
         private void SetupRadioButtons()
         {
             editedValues = new Dictionary<string, string>();
             treeModeRadioButton.Checked = true;
         }
-       
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -121,15 +121,15 @@ namespace ConfigFileAssistant_v1
 
             objectListView.ExpandAll();
         }
-        private void paintRows (object sender, FormatRowEventArgs e)
+        private void paintRows(object sender, FormatRowEventArgs e)
         {
             var variableInfo = (VariableInfo)e.Model;
-           
+
             if (variableInfo.Result == Result.ONLY_IN_CS)
             {
                 e.Item.BackColor = Color.PaleGreen;
                 e.Item.ForeColor = Color.Black;
-                
+
             }
             else if (variableInfo.Result == Result.ONLY_IN_YML)
             {
@@ -158,6 +158,7 @@ namespace ConfigFileAssistant_v1
                 IsExpanded = true;
             }
         }
+        
 
         private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)
         {
@@ -168,16 +169,15 @@ namespace ConfigFileAssistant_v1
                 e.Control.Bounds = e.CellBounds;
                 e.Control.Width = e.CellBounds.Width;
                 e.Control.Height = e.CellBounds.Height;
-                
+
             }
             else
             {
                 e.Cancel = true;
             }
-            
+
         }
 
-        
         private void DataTreeListView_CellEditFinishing(object sender, CellEditEventArgs e)
         {
             VariableInfo variable = (VariableInfo)e.RowObject;
@@ -188,7 +188,7 @@ namespace ConfigFileAssistant_v1
                 {
                     if (!string.IsNullOrEmpty(e.NewValue as string))
                     {
-                        ConfigValidator.UpdateChild(variable.FullName,e.NewValue as string);
+                        ConfigValidator.UpdateChild(variable.FullName, e.NewValue as string);
                     }
                 }
                 else if (!e.Value.Equals(e.NewValue))
@@ -235,7 +235,7 @@ namespace ConfigFileAssistant_v1
                 return;
 
             var variableInfo = (VariableInfo)e.Model;
-            if (variableInfo.Result != Result.OK && e.ColumnIndex==0)
+            if (variableInfo.Result != Result.OK && e.ColumnIndex == 0)
             {
                 Cursor = Cursors.Hand;
             }
@@ -253,10 +253,11 @@ namespace ConfigFileAssistant_v1
             var variableInfo = (VariableInfo)e.Model;
             if (variableInfo.Result != Result.OK)
             {
-                switch(variableInfo.Result) 
-                { 
+                switch (variableInfo.Result)
+                {
                     case Result.ONLY_IN_CS:
                         variableInfo.Result = Result.OK;
+                        ConfigValidator.AddChild(variableInfo);
                         VariableDataTreeListView.RemoveObject(variableInfo);
                         VariableDataTreeListView.AddObject(variableInfo);
                         break;
@@ -267,7 +268,7 @@ namespace ConfigFileAssistant_v1
                         break;
                     case Result.TYPE_MISMATCH:
                         variableInfo.Result = Result.OK;
-                        if(variableInfo.HasChildren())
+                        if (variableInfo.HasChildren())
                         {
                             VariableDataTreeListView.RemoveObject(variableInfo);
                             ConfigValidator.ModifyChild(variableInfo);
@@ -280,7 +281,7 @@ namespace ConfigFileAssistant_v1
                         break;
                 }
             }
-            else if(variableInfo.IsEnumType && e.ColumnIndex == 2)
+            else if (variableInfo.IsEnumType && e.ColumnIndex == 2)
             {
                 ShowEnumComboBox(e, variableInfo);
             }
@@ -301,7 +302,12 @@ namespace ConfigFileAssistant_v1
                 comboBox.BringToFront();
                 comboBox.Focus();
             }
-
+            comboBox.SelectedIndexChanged += (s, ev) =>
+            {
+                ConfigValidator.UpdateChild(variableInfo.FullName, comboBox.SelectedItem.ToString());
+                VariableDataTreeListView.RefreshObject(variableInfo);
+                VariableDataTreeListView.Controls.Remove(comboBox);
+            };
             comboBox.LostFocus += (s, ev) =>
             {
                 VariableDataTreeListView.Controls.Remove(comboBox);
@@ -312,21 +318,21 @@ namespace ConfigFileAssistant_v1
         {
             if (this.treeModeRadioButton.Checked)
             {
-                if (editedValues.Count>0)
+                if (editedValues.Count > 0)
                 {
                     foreach (var key in editedValues.Keys)
                     {
-                        ConfigValidator.UpdateChild(key,editedValues[key]);
+                        ConfigValidator.UpdateChild(key, editedValues[key]);
                     }
 
                     editedValues.Clear();
                 }
 
-                isEditMode = false; 
+                isEditMode = false;
             }
             else
             {
-                isEditMode = true;  
+                isEditMode = true;
                 editedValues.Clear();
             }
             SetEditable(isEditMode);
@@ -334,12 +340,20 @@ namespace ConfigFileAssistant_v1
 
         private void nextButton_Click(object sender, EventArgs e)
         {
-            var result = MessageBox.Show("이대로 진행하시겠습니까?", "Log Message", MessageBoxButtons.OK);
-            if (result == DialogResult.OK)
+            if(ConfigValidator.HasError())
             {
-                ConfigValidator.MakeYamlFile(ymlVariables, filePath);
-                this.Close();
+                MessageBox.Show("오류가 있습니다.");
             }
+            else
+            {
+                var result = MessageBox.Show("이대로 진행하시겠습니까?", "Log Message", MessageBoxButtons.OK);
+                if (result == DialogResult.OK)
+                {
+                    ConfigValidator.MakeYamlFile(ymlVariables, filePath);
+                    this.Close();
+                }
+            }
+            
         }
 
         private void cancelButton_Click(object sender, EventArgs e)
@@ -377,7 +391,6 @@ namespace ConfigFileAssistant_v1
         }
     }
 }
-
 
 
 

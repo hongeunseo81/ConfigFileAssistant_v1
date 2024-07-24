@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Linq;
 using System.Diagnostics;
+using System.Runtime.Remoting.Messaging;
 namespace ConfigFileAssistant_v1
 {
     public partial class MainForm : Form
@@ -15,51 +16,68 @@ namespace ConfigFileAssistant_v1
         private List<VariableInfo> csVariables;
         private List<VariableInfo> ymlVariables;
         private List<VariableInfo> resultVariables;
-        private Dictionary<string, string> editedValues;
 
         private Config conf;
-        private ImageList imageList;
-        private List<PictureBox> pictureBoxes;
-        private ImageList buttonImageList;
+        private ImageList CommandImageList;
+        private ImageList ExpandImageList;
+        private ImageList EditImageList;
         private Image ExpandImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/expand.png");
         private Image CollapseImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/collapse.png");
         private Image PlusImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/plus_color.png");
         private Image MinusImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/minus_color.png");
         private Image CautionImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/caution.png");
+        private Image EditImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/edit.png");
+        private Image BookImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/book.png");
+        private Image MenuImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/dots.png");
         private bool IsExpanded = true;
         private bool isEditMode = false;
+
+        private ContextMenuStrip contextMenuStrip;
         public MainForm()
         {
             InitializeComponent();
-            SetupRadioButtons();
             SetupButtonImages();
+            // SetupMenuItems();
         }
 
         private void SetupButtonImages()
         {
-            buttonImageList = new ImageList();
-            buttonImageList.ImageSize = new Size(30, 30);
-            buttonImageList.Images.Add("collapse", CollapseImageButton);
-            buttonImageList.Images.Add("expand", ExpandImageButton);
-            expandAllButton.ImageList = buttonImageList;
-            expandAllButton.Image = buttonImageList.Images[0];
+            ExpandImageList = new ImageList();
+            ExpandImageList.ImageSize = new Size(32, 32);
+            ExpandImageList.Images.Add("collapse", CollapseImageButton);
+            ExpandImageList.Images.Add("expand", ExpandImageButton);
+            expandAllButton.ImageList = ExpandImageList;
+            expandAllButton.Image = ExpandImageList.Images[0];
 
-            imageList = new ImageList();
-            imageList.ImageSize = new Size(16, 16);
-            imageList.Images.Add("plus", PlusImageButton);
-            imageList.Images.Add("minus", MinusImageButton);
-            imageList.Images.Add("caution", CautionImageButton);
+            CommandImageList = new ImageList();
+            CommandImageList.ImageSize = new Size(16,16);
+            CommandImageList.Images.Add("plus", PlusImageButton);
+            CommandImageList.Images.Add("minus", MinusImageButton);
+            CommandImageList.Images.Add("caution", CautionImageButton);
+
+            EditImageList = new ImageList();
+            EditImageList.ImageSize = new Size(25, 25);
+            EditImageList.Images.Add("edit", EditImageButton);
+            EditImageList.Images.Add("book", BookImageButton);
+            EditImageList.Images.Add("menu", MenuImageButton);
+
+            editButton.ImageList = EditImageList;
+            editButton.Image = EditImageList.Images[0];
+            RemoveButtonBorder(editButton);
+
+            menuButton.Image = EditImageList.Images[2];
+            RemoveButtonBorder(menuButton);
 
         }
 
-
-        private void SetupRadioButtons()
+        private void RemoveButtonBorder(Button button)
         {
-            editedValues = new Dictionary<string, string>();
-            treeModeRadioButton.Checked = true;
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderColor = Color.FromArgb(0, 255, 255, 255);
+            button.FlatAppearance.BorderSize = 0;
         }
 
-
+        
         private void Form1_Load(object sender, EventArgs e)
         {
             filePath = initFilePath;
@@ -71,11 +89,11 @@ namespace ConfigFileAssistant_v1
             VariableDataTreeListView.CellEditStarting += DataTreeListView_CellEditStarting;
             VariableDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
             AddVariablesToDataGridView(resultVariables, VariableDataTreeListView);
+            AddVariablesToDataGridView(csVariables, dataTreeListView1);
         }
-
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
         {
-            objectListView.SmallImageList = imageList;
+            objectListView.SmallImageList = CommandImageList;
             objectListView.SetObjects(variables);
             objectListView.CanExpandGetter = x => ((VariableInfo)x).HasChildren();
             objectListView.ChildrenGetter = x => ((VariableInfo)x).Children;
@@ -102,7 +120,7 @@ namespace ConfigFileAssistant_v1
                         {
                             return "plus";
                         }
-                        else if (variableInfo.Result == Result.TYPE_MISMATCH)
+                        else if (variableInfo.Result == Result.WRONG_VALUE)
                         {
                             return "caution";
                         }
@@ -112,8 +130,25 @@ namespace ConfigFileAssistant_v1
                 };
 
                 objectListView.AllColumns.Add(nameColumn);
-                objectListView.AllColumns.Add(new OLVColumn("Type", "Type") { AspectName = "TypeName", Width = 250 });
-                objectListView.AllColumns.Add(new OLVColumn("Value", "Value") { AspectName = "Value", Width = 250 });
+                objectListView.AllColumns.Add(new OLVColumn("Type", "Type") { AspectName = "TypeName", Width = 200 });
+                objectListView.AllColumns.Add(new OLVColumn("Value", "Value") { AspectName = "Value", Width = 200 });
+
+                objectListView.AllColumns.Add(new OLVColumn("Message", "Message")
+                {
+                    AspectName = "Result",
+                    Width = 200,
+                    AspectToStringConverter = value =>
+                    {
+                        if (value is Result result && (
+
+
+                        result == Result.OK))
+                        {
+                            return string.Empty;
+                        }
+                        return value.ToString();
+                    }
+                });
 
                 objectListView.FormatRow += paintRows;
                 objectListView.RebuildColumns();
@@ -121,6 +156,7 @@ namespace ConfigFileAssistant_v1
 
             objectListView.ExpandAll();
         }
+        
         private void paintRows(object sender, FormatRowEventArgs e)
         {
             var variableInfo = (VariableInfo)e.Model;
@@ -128,18 +164,15 @@ namespace ConfigFileAssistant_v1
             if (variableInfo.Result == Result.ONLY_IN_CS)
             {
                 e.Item.BackColor = Color.PaleGreen;
-                e.Item.ForeColor = Color.Black;
 
             }
             else if (variableInfo.Result == Result.ONLY_IN_YML)
             {
                 e.Item.BackColor = Color.LightPink;
-                e.Item.ForeColor = Color.Black;
             }
-            else if (variableInfo.Result == Result.TYPE_MISMATCH)
+            else if (variableInfo.Result == Result.WRONG_VALUE)
             {
-                e.Item.BackColor = Color.Orange;
-                e.Item.ForeColor = Color.Black;
+                e.Item.BackColor = Color.Gold;
             }
         }
 
@@ -148,21 +181,21 @@ namespace ConfigFileAssistant_v1
             if (IsExpanded)
             {
                 VariableDataTreeListView.CollapseAll();
-                expandAllButton.Image = buttonImageList.Images["expand"];
+                expandAllButton.Image = ExpandImageList.Images["expand"];
                 IsExpanded = false;
             }
             else
             {
                 VariableDataTreeListView.ExpandAll();
-                expandAllButton.Image = buttonImageList.Images["collapse"];
+                expandAllButton.Image = ExpandImageList.Images["collapse"];
                 IsExpanded = true;
             }
         }
         
-
         private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)
         {
             VariableInfo variableInfo = (VariableInfo)e.RowObject;
+            
             if (variableInfo.TypeName != typeof(Dictionary<,>).Name && variableInfo.TypeName != typeof(List<>).Name)
             {
                 e.Cancel = false;
@@ -175,7 +208,6 @@ namespace ConfigFileAssistant_v1
             {
                 e.Cancel = true;
             }
-
         }
 
         private void DataTreeListView_CellEditFinishing(object sender, CellEditEventArgs e)
@@ -251,96 +283,47 @@ namespace ConfigFileAssistant_v1
                 return;
 
             var variableInfo = (VariableInfo)e.Model;
+
             if (variableInfo.Result != Result.OK)
             {
-                switch (variableInfo.Result)
+                bool isSuccess = FixErrors(variableInfo);
+                if (isSuccess)
                 {
-                    case Result.ONLY_IN_CS:
-                        variableInfo.Result = Result.OK;
-                        ConfigValidator.AddChild(variableInfo);
-                        VariableDataTreeListView.RemoveObject(variableInfo);
-                        VariableDataTreeListView.AddObject(variableInfo);
-                        break;
-                    case Result.ONLY_IN_YML:
-                        variableInfo.Result = Result.OK;
-                        ConfigValidator.RemoveChild(variableInfo);
-                        VariableDataTreeListView.RemoveObject(variableInfo);
-                        break;
-                    case Result.TYPE_MISMATCH:
-                        variableInfo.Result = Result.OK;
-                        if (variableInfo.HasChildren())
-                        {
-                            VariableDataTreeListView.RemoveObject(variableInfo);
-                            ConfigValidator.ModifyChild(variableInfo);
-                            VariableDataTreeListView.AddObject(variableInfo);
-                        }
-                        else
-                        {
-                            ConfigValidator.ModifyChild(variableInfo);
-                        }
-                        break;
+                    variableInfo.Result = Result.OK;
+                    ConfigValidator.RemoveVariableFromErrorList(variableInfo.FullName);
                 }
             }
-            else if (variableInfo.IsEnumType && e.ColumnIndex == 2)
-            {
-                ShowEnumComboBox(e, variableInfo);
-            }
         }
-        private void ShowEnumComboBox(CellClickEventArgs e, VariableInfo variableInfo)
+        
+        private bool FixErrors(VariableInfo variableInfo)
         {
-            ComboBox comboBox = new ComboBox
+            var success = false;
+            switch (variableInfo.Result)
             {
-                DataSource = variableInfo.EnumValues,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-
-            var cellRectangle = VariableDataTreeListView.GetSubItem(e.RowIndex, e.ColumnIndex).Bounds;
-            if (cellRectangle != Rectangle.Empty)
-            {
-                comboBox.Bounds = cellRectangle;
-                VariableDataTreeListView.Controls.Add(comboBox);
-                comboBox.BringToFront();
-                comboBox.Focus();
-            }
-            comboBox.SelectedIndexChanged += (s, ev) =>
-            {
-                ConfigValidator.UpdateChild(variableInfo.FullName, comboBox.SelectedItem.ToString());
-                VariableDataTreeListView.RefreshObject(variableInfo);
-                VariableDataTreeListView.Controls.Remove(comboBox);
-            };
-            comboBox.LostFocus += (s, ev) =>
-            {
-                VariableDataTreeListView.Controls.Remove(comboBox);
-            };
-        }
-
-        private void ModeRadioButton_CheckedChanged(object sender, EventArgs e)
-        {
-            if (this.treeModeRadioButton.Checked)
-            {
-                if (editedValues.Count > 0)
-                {
-                    foreach (var key in editedValues.Keys)
+                case Result.ONLY_IN_CS:
+                    success = ConfigValidator.AddChildToVariable(variableInfo);
+                    break;
+                case Result.ONLY_IN_YML:
+                    success = ConfigValidator.RemoveChildFromVariable(variableInfo);
+                    VariableDataTreeListView.RemoveObject(variableInfo);
+                    break;
+                case Result.WRONG_VALUE:
+                    if (variableInfo.HasChildren())
                     {
-                        ConfigValidator.UpdateChild(key, editedValues[key]);
+                        variableInfo.Children.Clear();
+                        VariableDataTreeListView.RemoveObjects(variableInfo.Children);
                     }
-
-                    editedValues.Clear();
-                }
-
-                isEditMode = false;
+                    success = ConfigValidator.ModifyChildFromVariable(variableInfo);
+                    break;
+                default:
+                    break;
             }
-            else
-            {
-                isEditMode = true;
-                editedValues.Clear();
-            }
-            SetEditable(isEditMode);
+            return success;
         }
-
+        
         private void nextButton_Click(object sender, EventArgs e)
         {
-            if(ConfigValidator.HasError())
+            if(ConfigValidator.HasErrors())
             {
                 MessageBox.Show("오류가 있습니다.");
             }
@@ -361,6 +344,48 @@ namespace ConfigFileAssistant_v1
             this.Close();
         }
 
+        private void editButton_Click(object sender, EventArgs e)
+        {
+            if (isEditMode) 
+            {
+                isEditMode = false;
+                editButton.Image = EditImageList.Images["edit"];
+            }
+            else
+            {
+                isEditMode = true;
+                editButton.Image = EditImageList.Images["book"];
+            }
+            SetEditable(isEditMode);
+        }
+
+        private void fixButton_Click(object sender, EventArgs e)
+        {
+            var errors = ConfigValidator.GetErrors();
+            if (errors!= null && errors.Count > 0)
+            {
+                List<string> fixedErrorsList = new List<string>();
+                foreach (var key in errors.Keys)
+                {
+                    if(!FixErrors(errors[key]))
+                    {
+                        MessageBox.Show("오류 수정 중 문제가 발생했습니다.");
+                        return;
+                    }
+                    fixedErrorsList.Add(key);
+                }
+
+                foreach (var fixedError in fixedErrorsList)
+                {
+                    ConfigValidator.RemoveVariableFromErrorList(fixedError);
+                }
+                VariableDataTreeListView.Refresh();
+            }
+            else
+            {
+                MessageBox.Show("수정 할 오류가 없습니다.");
+            }
+        }
     }
 
     public class MultiImageRenderer : BaseRenderer

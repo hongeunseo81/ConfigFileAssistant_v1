@@ -26,7 +26,7 @@ namespace ConfigFileAssistant_v1
             var csVariables = ConfigValidator.ExtractCsVariables();
             var ymlVariables = ConfigValidator.ExtractYmlVariables();
             ConfigValidator.CompareVariables(csVariables, ymlVariables);
-           */
+            */
             // ConfigValidator.MigrateVariables(csVariables, result, filePath);
 
         }

@@ -38,11 +38,9 @@
             this.VariableDataTreeListView = new BrightIdeasSoftware.DataTreeListView();
             this.expandAllButton = new System.Windows.Forms.Button();
             this.fixButton = new System.Windows.Forms.Button();
-            this.dataTreeListView1 = new BrightIdeasSoftware.DataTreeListView();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.VariableDataTreeListView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -52,7 +50,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1789, 55);
+            this.panel1.Size = new System.Drawing.Size(949, 55);
             this.panel1.TabIndex = 2;
             // 
             // menuButton
@@ -144,36 +142,12 @@
             this.fixButton.UseVisualStyleBackColor = true;
             this.fixButton.Click += new System.EventHandler(this.fixButton_Click);
             // 
-            // dataTreeListView1
-            // 
-            this.dataTreeListView1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.dataTreeListView1.CellEditUseWholeCell = false;
-            this.dataTreeListView1.DataSource = null;
-            this.dataTreeListView1.Font = new System.Drawing.Font("굴림", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.dataTreeListView1.FullRowSelect = true;
-            this.dataTreeListView1.GridLines = true;
-            this.dataTreeListView1.HeaderUsesThemes = true;
-            this.dataTreeListView1.HeaderWordWrap = true;
-            this.dataTreeListView1.HideSelection = false;
-            this.dataTreeListView1.Location = new System.Drawing.Point(1021, 163);
-            this.dataTreeListView1.Name = "dataTreeListView1";
-            this.dataTreeListView1.OwnerDrawnHeader = true;
-            this.dataTreeListView1.RootKeyValueString = "";
-            this.dataTreeListView1.ShowGroups = false;
-            this.dataTreeListView1.Size = new System.Drawing.Size(721, 681);
-            this.dataTreeListView1.TabIndex = 8;
-            this.dataTreeListView1.UseCompatibleStateImageBehavior = false;
-            this.dataTreeListView1.UseFiltering = true;
-            this.dataTreeListView1.View = System.Windows.Forms.View.Details;
-            this.dataTreeListView1.VirtualMode = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(1789, 986);
-            this.Controls.Add(this.dataTreeListView1);
+            this.ClientSize = new System.Drawing.Size(949, 986);
             this.Controls.Add(this.fixButton);
             this.Controls.Add(this.expandAllButton);
             this.Controls.Add(this.VariableDataTreeListView);
@@ -185,7 +159,6 @@
             this.panel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.VariableDataTreeListView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataTreeListView1)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -201,7 +174,6 @@
         private System.Windows.Forms.Button editButton;
         private System.Windows.Forms.Button menuButton;
         private System.Windows.Forms.Button fixButton;
-        private BrightIdeasSoftware.DataTreeListView dataTreeListView1;
     }
 }
 

@@ -6,12 +6,17 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using YamlDotNet.Core.Tokens;
 
 namespace ConfigTypeFinder
 {
     public class TypeFinder
     {
-        public static Func<object, (bool, string)> MakeFunction(ValidatorType validatorType, string info)
+        private static Dictionary<string, Func<object, (bool, string)>> validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
+        private static Dictionary<string, object[]> FunctionArgs = new Dictionary<string, object[]>();
+        
+        public static void MakeFunction(string name,ValidatorType validatorType, string info)
         {
             var infoArray = info.Split(' ');
             var size = infoArray[1].Split(new char[] { '[', ']' }, StringSplitOptions.RemoveEmptyEntries);
@@ -45,27 +50,39 @@ namespace ConfigTypeFinder
                 }
                 if (TypeValidator.ValidationDict.TryGetValue(validatorType, out var validatorFunc))
                 {
-                    return validatorFunc(args);
+                    if(!validatorFunction.ContainsKey(name))
+                    {
+                        validatorFunction.Add(name, validatorFunc(args));
+                        if(args.Count() > 0)
+                        {
+                            FunctionArgs.Add(name, args);
+                        }
+                    }
                 }
-                return null;
             }
-            return null;
         }
-        public static bool IsValidateType(Dictionary<string, Func<object, (bool, string)>> validatorFunctionArgs,string name, Type type,string value)
+        public static string IsValidateType(VariableInfo variableInfo, string value)
         {
             if (value == "")
             {
-                return true;
+                return string.Empty;
             }
-            if(type == typeof(bool))
+            if (variableInfo.Type == typeof(bool))
             {
-                return (value == "True" || value == "False") ? true : false;
+                return (value == "True" || value == "False") ? string.Empty : "True 또는 False를 입력하세요.";
             }
-            if (validatorFunctionArgs.TryGetValue(name, out var validatorFunc))
+            if (validatorFunction.TryGetValue(variableInfo.Name, out var validatorFunc))
             {
-                return validatorFunc(value).Item1;
+                var isValidate = validatorFunc(value).Item1;
+                var message = validatorFunc(value).Item2;
+                if (!isValidate && FunctionArgs.ContainsKey(variableInfo.Name))
+                {
+                    object[] args = FunctionArgs[variableInfo.Name];
+                    message = $"{args[0]} ~ {args[1]} 값을 넣어주세요.";
+                }
+                return message;
             }
-            return true;
+            return string.Empty;
         }
     }
 

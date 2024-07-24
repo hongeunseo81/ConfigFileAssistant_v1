@@ -89,7 +89,6 @@ namespace ConfigFileAssistant_v1
             VariableDataTreeListView.CellEditStarting += DataTreeListView_CellEditStarting;
             VariableDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
             AddVariablesToDataGridView(resultVariables, VariableDataTreeListView);
-            AddVariablesToDataGridView(csVariables, dataTreeListView1);
         }
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
         {
@@ -216,17 +215,17 @@ namespace ConfigFileAssistant_v1
 
             if (e.NewValue != null)
             {
-                if (e.Value == null)
+                if (e.Value != null && !e.Value.Equals(e.NewValue))
                 {
-                    if (!string.IsNullOrEmpty(e.NewValue as string))
+                    var message = ConfigValidator.UpdateChild(variable.FullName, e.NewValue);
+                    if(message != string.Empty)
                     {
-                        ConfigValidator.UpdateChild(variable.FullName, e.NewValue as string);
+                        e.Cancel = true;
+                        MessageBox.Show(message);
+                        
                     }
                 }
-                else if (!e.Value.Equals(e.NewValue))
-                {
-                    ConfigValidator.UpdateChild(variable.FullName, e.NewValue as string);
-                }
+                
             }
         }
         private void SetEditable(bool isEditable)

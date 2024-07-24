@@ -80,13 +80,11 @@ namespace ConfigFileAssistant_v1
         private static YamlStream yaml;
         private static List<VariableInfo> csVariables;
         private static List<VariableInfo> ymlVariables;
-        private static Dictionary<string, Func<object, (bool, string)>> validatorFunctionArgs;
         private static Dictionary<String, VariableInfo> errorVariableNames;
 
         public static void Init()
         {
             instance = Activator.CreateInstance(typeof(Config));
-            validatorFunctionArgs = new Dictionary<string, Func<object, (bool, string)>>();
             csVariables = new List<VariableInfo>();
         }
         public static void LoadYamlFile(string filePath)
@@ -237,12 +235,7 @@ namespace ConfigFileAssistant_v1
                 {
                     var constructorArguments = validatorAttributeData.ConstructorArguments;
                     var validatorType = (ValidatorType)constructorArguments[0].Value;
-                    var func = TypeFinder.MakeFunction(validatorType, constructorArguments[1].ToString());
-
-                    if (!validatorFunctionArgs.ContainsKey(enumField.Name))
-                    {
-                        validatorFunctionArgs.Add(enumField.Name, func);
-                    }
+                    TypeFinder.MakeFunction(enumField.Name,validatorType, constructorArguments[1].ToString());
                     enumValues.Add(new VariableInfo(enumField.Name, validatorType.ToString(), ""));
                 }
             }
@@ -381,7 +374,7 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
-                if (!TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name, csVariable.Type, ymlVariable.Value.ToString()))
+                if (TypeFinder.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) != string.Empty)
                 {
                     return Result.WRONG_VALUE;
                 }
@@ -403,7 +396,7 @@ namespace ConfigFileAssistant_v1
                 ymlVariable.Type = values[ymlVariable.Name].Type;
                 ymlVariable.TypeName = values[ymlVariable.Name].TypeName;
                 ymlVariable.Value = values[ymlVariable.Name].Value;
-                if (TypeFinder.IsValidateType(validatorFunctionArgs, ymlVariable.Name, ymlVariable.Type, ymlVariable.Value.ToString()))
+                if (TypeFinder.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) == string.Empty)
                 {
                     return Result.OK;
                 }
@@ -495,25 +488,19 @@ namespace ConfigFileAssistant_v1
             }
             return false;
         }
-        public static void UpdateChild(string fullName, string value)
+        public static string UpdateChild(string fullName, object value)
         {
             var parent = GetParentVariable(fullName);
             List<VariableInfo> parentVariables = parent == null ? ymlVariables : parent.Children;
             var names = fullName.Split('.');
             var target = parentVariables.Find(v => v.Name == names.Last());
-            if(target != null) 
+            var resultMessage = string.Empty;
+            if (target != null) 
             {
-                target.Value = value;
-                if (!TypeFinder.IsValidateType(validatorFunctionArgs, target.Name, target.Type, value))
+                resultMessage = TypeFinder.IsValidateType(target,value.ToString());
+                if (resultMessage == string.Empty)
                 {
-                    target.Result = Result.WRONG_VALUE;
-                    if (!errorVariableNames.ContainsKey(fullName))
-                    {
-                        errorVariableNames.Add(fullName, target);
-                    }
-                }
-                else
-                {
+                    target.Value = value;
                     if (errorVariableNames.ContainsKey(fullName))
                     {
                         errorVariableNames.Remove(fullName);
@@ -522,9 +509,10 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
-                Debug.WriteLine($"{fullName} 변수를 찾을 수 없습니다.");
+                resultMessage = $"{fullName} 변수를 찾을 수 없습니다.";
             }
-            
+
+            return resultMessage;
         }
 
 

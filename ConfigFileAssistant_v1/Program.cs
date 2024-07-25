@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConfigTypeFinder;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,10 +17,15 @@ namespace ConfigFileAssistant_v1
         static void Main()
         {
             ConfigValidator.Init();
+            TypeHandler.init();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());
-
+            /*var types = TypeHandler.GetAllTypes();
+            foreach (var key in types.Keys) 
+            {
+                Debug.WriteLine(key +" - " + types[key]);
+            }*/
             /*var filePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
             ConfigValidator.Init();
             ConfigValidator.LoadYamlFile(filePath);

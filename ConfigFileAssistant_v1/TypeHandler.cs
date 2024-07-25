@@ -11,11 +11,32 @@ using YamlDotNet.Core.Tokens;
 
 namespace ConfigTypeFinder
 {
-    public class TypeFinder
+    public class TypeHandler
     {
-        private static Dictionary<string, Func<object, (bool, string)>> validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
-        private static Dictionary<string, object[]> FunctionArgs = new Dictionary<string, object[]>();
-        
+        private static Dictionary<string, Func<object, (bool, string)>> validatorFunction;
+        private static Dictionary<string, object[]> FunctionArgs;
+        private static Dictionary<string,Type> types;
+
+        public static void init()
+        {
+            validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
+            FunctionArgs = new Dictionary<string, object[]>();
+            types = new Dictionary<string, Type>();
+            types.Add(typeof(Dictionary<,>).Name, typeof(Dictionary<,>));
+            types.Add(typeof(List<>).Name, typeof(List<>));
+            types.Add(typeof(string).Name, typeof(string));
+        }
+        public static Dictionary<string, Type> GetAllTypes()
+        {
+            return types;
+        }
+        public static void AddType(string typeName, Type type)
+        {
+            if(!types.ContainsKey(typeName))
+            {
+                types.Add(typeName, type);
+            }
+        }
         public static void MakeFunction(string name,ValidatorType validatorType, string info)
         {
             var infoArray = info.Split(' ');
@@ -60,6 +81,7 @@ namespace ConfigTypeFinder
                     }
                 }
             }
+            AddType(validatorType.ToString(), typeof(string));
         }
         public static string IsValidateType(VariableInfo variableInfo, string value)
         {
@@ -69,7 +91,7 @@ namespace ConfigTypeFinder
             }
             if (variableInfo.Type == typeof(bool))
             {
-                return (value == "True" || value == "False") ? string.Empty : "True 또는 False를 입력하세요.";
+                return (value == "True" || value == "False") ? string.Empty : "Please enter True or False.";
             }
             if (validatorFunction.TryGetValue(variableInfo.Name, out var validatorFunc))
             {
@@ -78,7 +100,7 @@ namespace ConfigTypeFinder
                 if (!isValidate && FunctionArgs.ContainsKey(variableInfo.Name))
                 {
                     object[] args = FunctionArgs[variableInfo.Name];
-                    message = $"{args[0]} ~ {args[1]} 값을 넣어주세요.";
+                    message = $"Please enter a value between {args[0]} and {args[1]}.";
                 }
                 return message;
             }

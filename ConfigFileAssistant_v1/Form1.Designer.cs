@@ -69,7 +69,7 @@
             this.editButton.Size = new System.Drawing.Size(33, 34);
             this.editButton.TabIndex = 7;
             this.editButton.UseVisualStyleBackColor = true;
-            this.editButton.Click += new System.EventHandler(this.editButton_Click);
+            this.editButton.Click += new System.EventHandler(this.EditButton_Click);
             // 
             // panel2
             // 
@@ -88,7 +88,7 @@
             this.nextButton.TabIndex = 1;
             this.nextButton.Text = "NEXT";
             this.nextButton.UseVisualStyleBackColor = true;
-            this.nextButton.Click += new System.EventHandler(this.nextButton_Click);
+            this.nextButton.Click += new System.EventHandler(this.NextButton_Click);
             // 
             // cancelButton
             // 
@@ -98,7 +98,7 @@
             this.cancelButton.TabIndex = 0;
             this.cancelButton.Text = "CANCEL";
             this.cancelButton.UseVisualStyleBackColor = true;
-            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
+            this.cancelButton.Click += new System.EventHandler(this.CancelButton_Click);
             // 
             // VariableDataTreeListView
             // 
@@ -130,7 +130,7 @@
             this.expandAllButton.Size = new System.Drawing.Size(58, 34);
             this.expandAllButton.TabIndex = 6;
             this.expandAllButton.UseVisualStyleBackColor = true;
-            this.expandAllButton.Click += new System.EventHandler(this.expandAllButton_Click);
+            this.expandAllButton.Click += new System.EventHandler(this.ExpandAllButton_Click);
             // 
             // fixButton
             // 
@@ -140,7 +140,7 @@
             this.fixButton.TabIndex = 7;
             this.fixButton.Text = "FIX";
             this.fixButton.UseVisualStyleBackColor = true;
-            this.fixButton.Click += new System.EventHandler(this.fixButton_Click);
+            this.fixButton.Click += new System.EventHandler(this.FixButton_Click);
             // 
             // MainForm
             // 

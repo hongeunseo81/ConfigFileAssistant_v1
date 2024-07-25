@@ -3,10 +3,8 @@ using CalibrationTool;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Linq;
-using System.Diagnostics;
-using System.Runtime.Remoting.Messaging;
+using System.Windows.Forms;
 namespace ConfigFileAssistant_v1
 {
     public partial class MainForm : Form
@@ -37,7 +35,7 @@ namespace ConfigFileAssistant_v1
         {
             InitializeComponent();
             SetupButtonImages();
-            // SetupMenuItems();
+            SetupMenuItems();
         }
 
         private void SetupButtonImages()
@@ -50,7 +48,7 @@ namespace ConfigFileAssistant_v1
             expandAllButton.Image = ExpandImageList.Images[0];
 
             CommandImageList = new ImageList();
-            CommandImageList.ImageSize = new Size(16,16);
+            CommandImageList.ImageSize = new Size(16, 16);
             CommandImageList.Images.Add("plus", PlusImageButton);
             CommandImageList.Images.Add("minus", MinusImageButton);
             CommandImageList.Images.Add("caution", CautionImageButton);
@@ -77,7 +75,16 @@ namespace ConfigFileAssistant_v1
             button.FlatAppearance.BorderSize = 0;
         }
 
-        
+        private void SetupMenuItems()
+        {
+            contextMenuStrip = new ContextMenuStrip();
+            var addRowMenuItem = new ToolStripMenuItem("Add Row");
+            var deleteRowMenuItem = new ToolStripMenuItem("Delete Row");
+            contextMenuStrip.Items.AddRange(new ToolStripItem[] { addRowMenuItem, deleteRowMenuItem });
+            addRowMenuItem.Click += AddRowMenuItem_Click;
+            deleteRowMenuItem.Click += DeleteRowMenuItem_Click;
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             filePath = initFilePath;
@@ -90,6 +97,7 @@ namespace ConfigFileAssistant_v1
             VariableDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
             AddVariablesToDataGridView(resultVariables, VariableDataTreeListView);
         }
+
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
         {
             objectListView.SmallImageList = CommandImageList;
@@ -138,10 +146,7 @@ namespace ConfigFileAssistant_v1
                     Width = 200,
                     AspectToStringConverter = value =>
                     {
-                        if (value is Result result && (
-
-
-                        result == Result.OK))
+                        if (value is Result result && (result == Result.OK))
                         {
                             return string.Empty;
                         }
@@ -149,14 +154,14 @@ namespace ConfigFileAssistant_v1
                     }
                 });
 
-                objectListView.FormatRow += paintRows;
+                objectListView.FormatRow += PaintRows;
                 objectListView.RebuildColumns();
             }
 
             objectListView.ExpandAll();
         }
-        
-        private void paintRows(object sender, FormatRowEventArgs e)
+
+        private void PaintRows(object sender, FormatRowEventArgs e)
         {
             var variableInfo = (VariableInfo)e.Model;
 
@@ -175,7 +180,7 @@ namespace ConfigFileAssistant_v1
             }
         }
 
-        private void expandAllButton_Click(object sender, EventArgs e)
+        private void ExpandAllButton_Click(object sender, EventArgs e)
         {
             if (IsExpanded)
             {
@@ -190,11 +195,145 @@ namespace ConfigFileAssistant_v1
                 IsExpanded = true;
             }
         }
+
         
+        private void SetEditable(bool isEditable)
+        {
+            foreach (OLVColumn column in VariableDataTreeListView.Columns)
+            {
+                if (column.AspectName == "Value")
+                {
+                    column.IsEditable = isEditable;
+                }
+                else
+                {
+                    column.IsEditable = false;
+                }
+            }
+
+            if (isEditable)
+            {
+                VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.SingleClick;
+                VariableDataTreeListView.BackColor = Color.PowderBlue;
+                VariableDataTreeListView.ForeColor = Color.Black;
+                VariableDataTreeListView.CellClick += DataTreeListView_CellClick;
+                VariableDataTreeListView.CellRightClick += VariableDataTreeListView_CellRightClick;
+                VariableDataTreeListView.CellOver += DataTreeListView_CellOver;
+            }
+            else
+            {
+                VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.None;
+                VariableDataTreeListView.BackColor = SystemColors.Window;
+                VariableDataTreeListView.ForeColor = SystemColors.ControlText;
+                VariableDataTreeListView.CellClick -= DataTreeListView_CellClick;
+                VariableDataTreeListView.CellRightClick -= VariableDataTreeListView_CellRightClick;
+                VariableDataTreeListView.CellOver -= DataTreeListView_CellOver;
+            }
+        }
+
+        private void VariableDataTreeListView_CellRightClick(object sender, CellRightClickEventArgs e)
+        {
+            contextMenuStrip.Tag = e.RowIndex;
+            var screenPosition = VariableDataTreeListView.PointToScreen(e.Location);
+
+            contextMenuStrip.Show(screenPosition);
+
+            e.Handled = true;
+
+        }
+        private void AddRowMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedObject = VariableDataTreeListView.SelectedObject as VariableInfo;
+            var selectedIndex = VariableDataTreeListView.SelectedIndex;
+            string path = "";
+            if (selectedObject != null)
+            {
+                string fullName = selectedObject.FullName;
+                int lastIndex = fullName.LastIndexOf('.');
+                if (lastIndex != -1)
+                {
+                    path = fullName.Substring(0, lastIndex);
+                }
+                
+            }
+            using (ObjectCreater objectCreater = new ObjectCreater(path))
+            {
+                if (objectCreater.ShowDialog() == DialogResult.OK)
+                {
+                    List<VariableInfo> newObjects = objectCreater.CreatedVariables;
+                    for (int i = newObjects.Count-1; i>=0; --i)
+                    {
+                        var success = ConfigValidator.InsertChildToParent(selectedObject, newObjects[i]);
+                        if (!success)
+                        {
+                            MessageBox.Show("Adding row failed.");
+                        }
+                        else
+                        {
+                            VariableDataTreeListView.SetObjects(ymlVariables);
+                            VariableDataTreeListView.SelectedObject = newObjects[i];
+                        }
+                    }
+                    VariableDataTreeListView.SelectedIndex = selectedIndex + newObjects.Count;
+                }
+            }
+
+        }
+
+
+        private void DeleteRowMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedObject = VariableDataTreeListView.SelectedObject as VariableInfo;
+            if (selectedObject != null)
+            {
+                if (!ConfigValidator.RemoveChildFromVariable(selectedObject))
+                {
+                    MessageBox.Show("Row deletion failed.");
+                }
+                else
+                {
+                    VariableDataTreeListView.SetObjects(ymlVariables);
+                }
+            }
+        }
+
+        private void DataTreeListView_CellOver(object sender, CellOverEventArgs e)
+        {
+            if (e.Model == null || e.SubItem == null)
+                return;
+
+            var variableInfo = (VariableInfo)e.Model;
+            if ((variableInfo.Result != Result.OK && variableInfo.Result != Result.BLANK) && e.ColumnIndex == 0)
+            {
+                Cursor = Cursors.Hand;
+            }
+            else
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void DataTreeListView_CellClick(object sender, CellClickEventArgs e)
+        {
+            if (e.Model == null)
+                return;
+
+            var variableInfo = (VariableInfo)e.Model;
+
+            if (variableInfo.Result != Result.OK && e.ColumnIndex == 0)
+            {
+                bool isSuccess = FixErrors(variableInfo);
+                if (isSuccess)
+                {
+                    variableInfo.Result = Result.OK;
+                    ConfigValidator.RemoveVariableFromErrorList(variableInfo.FullName);
+                }
+            }
+        }
         private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)
         {
             VariableInfo variableInfo = (VariableInfo)e.RowObject;
-            
+
             if (variableInfo.TypeName != typeof(Dictionary<,>).Name && variableInfo.TypeName != typeof(List<>).Name)
             {
                 e.Cancel = false;
@@ -218,82 +357,15 @@ namespace ConfigFileAssistant_v1
                 if (e.Value != null && !e.Value.Equals(e.NewValue))
                 {
                     var message = ConfigValidator.UpdateChild(variable.FullName, e.NewValue);
-                    if(message != string.Empty)
+                    if (message != string.Empty)
                     {
                         e.Cancel = true;
                         MessageBox.Show(message);
-                        
+
                     }
                 }
-                
             }
         }
-        private void SetEditable(bool isEditable)
-        {
-            foreach (OLVColumn column in VariableDataTreeListView.Columns)
-            {
-                if (column.AspectName == "Value")
-                {
-                    column.IsEditable = isEditable;
-                }
-                else
-                {
-                    column.IsEditable = false;
-                }
-            }
-
-            if (isEditable)
-            {
-                VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.SingleClick;
-                VariableDataTreeListView.BackColor = Color.PowderBlue;
-                VariableDataTreeListView.ForeColor = Color.Black;
-                VariableDataTreeListView.CellClick += YmlDataTreeListView_CellClick;
-                VariableDataTreeListView.CellOver += YmlDataTreeListView_CellOver;
-            }
-            else
-            {
-                VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.None;
-                VariableDataTreeListView.BackColor = SystemColors.Window;
-                VariableDataTreeListView.ForeColor = SystemColors.ControlText;
-                VariableDataTreeListView.CellClick -= YmlDataTreeListView_CellClick;
-                VariableDataTreeListView.CellOver -= YmlDataTreeListView_CellOver;
-            }
-        }
-
-        private void YmlDataTreeListView_CellOver(object sender, CellOverEventArgs e)
-        {
-            if (e.Model == null || e.SubItem == null)
-                return;
-
-            var variableInfo = (VariableInfo)e.Model;
-            if (variableInfo.Result != Result.OK && e.ColumnIndex == 0)
-            {
-                Cursor = Cursors.Hand;
-            }
-            else
-            {
-                Cursor = Cursors.Default;
-            }
-        }
-
-        private void YmlDataTreeListView_CellClick(object sender, CellClickEventArgs e)
-        {
-            if (e.Model == null)
-                return;
-
-            var variableInfo = (VariableInfo)e.Model;
-
-            if (variableInfo.Result != Result.OK)
-            {
-                bool isSuccess = FixErrors(variableInfo);
-                if (isSuccess)
-                {
-                    variableInfo.Result = Result.OK;
-                    ConfigValidator.RemoveVariableFromErrorList(variableInfo.FullName);
-                }
-            }
-        }
-        
         private bool FixErrors(VariableInfo variableInfo)
         {
             var success = false;
@@ -319,33 +391,35 @@ namespace ConfigFileAssistant_v1
             }
             return success;
         }
-        
-        private void nextButton_Click(object sender, EventArgs e)
+
+        private void NextButton_Click(object sender, EventArgs e)
         {
-            if(ConfigValidator.HasErrors())
+            var compareResult = ConfigValidator.CompareVariables(csVariables, ymlVariables);
+            AddVariablesToDataGridView(compareResult, VariableDataTreeListView);
+            if (ConfigValidator.HasErrors())
             {
-                MessageBox.Show("오류가 있습니다.");
+                MessageBox.Show("There is an error.");
             }
             else
             {
-                var result = MessageBox.Show("이대로 진행하시겠습니까?", "Log Message", MessageBoxButtons.OK);
+                var result = MessageBox.Show("Do you want to proceed?", "Log Message", MessageBoxButtons.OK);
                 if (result == DialogResult.OK)
                 {
                     ConfigValidator.MakeYamlFile(ymlVariables, filePath);
                     this.Close();
                 }
             }
-            
+
         }
 
-        private void cancelButton_Click(object sender, EventArgs e)
+        private void CancelButton_Click(object sender, EventArgs e)
         {
             this.Close();
         }
 
-        private void editButton_Click(object sender, EventArgs e)
+        private void EditButton_Click(object sender, EventArgs e)
         {
-            if (isEditMode) 
+            if (isEditMode)
             {
                 isEditMode = false;
                 editButton.Image = EditImageList.Images["edit"];
@@ -358,17 +432,17 @@ namespace ConfigFileAssistant_v1
             SetEditable(isEditMode);
         }
 
-        private void fixButton_Click(object sender, EventArgs e)
+        private void FixButton_Click(object sender, EventArgs e)
         {
             var errors = ConfigValidator.GetErrors();
-            if (errors!= null && errors.Count > 0)
+            if (errors != null && errors.Count > 0)
             {
                 List<string> fixedErrorsList = new List<string>();
                 foreach (var key in errors.Keys)
                 {
-                    if(!FixErrors(errors[key]))
+                    if (!FixErrors(errors[key]))
                     {
-                        MessageBox.Show("오류 수정 중 문제가 발생했습니다.");
+                        MessageBox.Show("A problem occurred while fixing the error.");
                         return;
                     }
                     fixedErrorsList.Add(key);
@@ -382,7 +456,7 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
-                MessageBox.Show("수정 할 오류가 없습니다.");
+                MessageBox.Show("There are no errors to fix.");
             }
         }
     }

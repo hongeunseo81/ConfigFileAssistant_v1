@@ -1,22 +1,14 @@
 ﻿using CalibrationTool;
 using CoPick.Setting;
-using ScintillaNET;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Windows.Forms;
-using System.Xml.Linq;
-using YamlDotNet.Core.Tokens;
 using YamlDotNet.RepresentationModel;
+using ConfigTypeFinder;
 
 namespace ConfigFileAssistant_v1
 {
@@ -27,16 +19,21 @@ namespace ConfigFileAssistant_v1
         public Type Type { get; set; }
         public string TypeName { get; set; }
         public object Value { get; set; }
+        public object DefaultValue { get; set; }
         public Result Result { get; set; }
-        public string DefaultType {  get; set; }
         public List<VariableInfo> Children { get; set; }
-        
-        public void AddChild(VariableInfo child)
+        public List<VariableInfo> EnumValues { get; set; }
+       
+        public VariableInfo(string path, string name,string typeName, Object value)
         {
-            
-            Children.Add(child);
+            Name = name;
+            FullName = path == string.Empty ? name : $"{path}.{Name}";
+            TypeName = typeName;
+            Value = value;
+            DefaultValue = string.Empty;
+            Result = Result.OK;
+            Children = new List<VariableInfo>();
         }
-
         public VariableInfo(string name, Type type, object value)
         {
             FullName = name;
@@ -45,7 +42,6 @@ namespace ConfigFileAssistant_v1
             TypeName = type.Name;
             Children = new List<VariableInfo>();
             Value = value;
-            Result = Result.OK;
         }
         public VariableInfo(string name, string typeName, object value)
         {
@@ -55,31 +51,51 @@ namespace ConfigFileAssistant_v1
             TypeName = typeName;
             Children = new List<VariableInfo>();
             Value = value;
-            Result = Result.OK;
+        }
+
+        public void SetEnumValues(List<VariableInfo> variables)
+        {
+            if(EnumValues == null)
+            {
+
+                EnumValues = new List<VariableInfo>();
+            }
+            EnumValues = variables;
+            DefaultValue = variables[0].Value;
         }
         public bool HasChildren()
         {
             return Children.Count > 0;
         }
+        public bool IsEnumType()
+        {
+            return EnumValues != null && EnumValues.Count>0;
+        }
     }
-    
-    public enum Result 
-    { 
+
+    public enum Result
+    {
         OK,
         ONLY_IN_CS,
         ONLY_IN_YML,
-        TYPE_MISMATCH
+        WRONG_VALUE,
+        BLANK
     }
 
     public class ConfigValidator
     {
-        public static Object instance;
-        public static Dictionary<String,VariableInfo> errorVariableNames;
-        public static YamlMappingNode root;
-        public static YamlStream yaml;
-        public static List<VariableInfo> csVariables;
-        public static List<VariableInfo> ymlVariables;
+        private static Object instance;
+        private static YamlMappingNode root;
+        private static YamlStream yaml;
+        private static List<VariableInfo> csVariables;
+        private static List<VariableInfo> ymlVariables;
+        private static Dictionary<String, VariableInfo> errorVariableNames;
 
+        public static void Init()
+        {
+            instance = Activator.CreateInstance(typeof(Config));
+            csVariables = new List<VariableInfo>();
+        }
         public static void LoadYamlFile(string filePath)
         {
             yaml = new YamlStream();
@@ -124,10 +140,10 @@ namespace ConfigFileAssistant_v1
                         ExtractYmlVariablesRecursive(entry.Value, childInfo.Children, fullName);
                         variables.Add(childInfo);
                     }
-                    else if (entry.Value is YamlScalarNode scalarNode)
+                    else
                     {
                         var type = typeof(string);
-                        variables.Add(new VariableInfo(fullName, type, scalarNode.Value));
+                        variables.Add(new VariableInfo(fullName, type, (entry.Value)));
                     }
                 }
             }
@@ -136,7 +152,7 @@ namespace ConfigFileAssistant_v1
                 int index = 0;
                 foreach (var childNode in sequenceNode.Children)
                 {
-                    var childPrefix = $"{prefix}[{index}]";
+                    var childPrefix = $"{prefix}.[{index}]";
 
                     if (childNode is YamlMappingNode)
                     {
@@ -165,74 +181,81 @@ namespace ConfigFileAssistant_v1
 
         public static List<VariableInfo> ExtractCsVariables()
         {
-            csVariables = new List<VariableInfo>();
             var type = typeof(Config);
-            instance = Activator.CreateInstance(typeof(Config));
 
             foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                object defaultValue = GetDefaultValue(property,instance);
-                ProcessProperty(property.Name, property.PropertyType, defaultValue, csVariables);
+                object defaultValue = GetDefaultValue(property, instance);
+                ExtractCsVariablesRecursive(property.Name, property.PropertyType, defaultValue, csVariables);
             }
             return csVariables;
         }
-        
-        private static void ProcessProperty(string propertyName, Type propertyType, Object value,List<VariableInfo> variables)
+        private static void ExtractCsVariablesRecursive(string propertyName, Type propertyType, Object value, List<VariableInfo> variables)
         {
-            VariableInfo variableInfo; 
+            VariableInfo variableInfo;
             if (!propertyType.IsGenericType)
             {
                 variableInfo = new VariableInfo(propertyName, propertyType, value);
                 if (propertyType.IsEnum)
                 {
-                    foreach (var item in propertyType.GetEnumValues())
+                    variableInfo.SetEnumValues(ExtractEnumValues(variableInfo,propertyType));
+                    if (propertyName.Split('.').Last() != "Key")
                     {
-                        var enumField = propertyType.GetField(item.ToString());
-                        var validatorAttributeData = enumField.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == typeof(ValidatorTypeAttribute));
-
-                        if (validatorAttributeData == null)
-                        {
-                            variableInfo.Children.Add(new VariableInfo(enumField.Name, item.ToString(), ""));
-                            continue;
-                        }
-
-                        var constructorArguments = validatorAttributeData.ConstructorArguments;
-                        var validatorType = (ValidatorType)constructorArguments[0].Value;
-
-                        variableInfo.Children.Add(new VariableInfo(enumField.Name, validatorType.ToString(),""));
+                        TypeHandler.AddType(variableInfo.TypeName, variableInfo.Type);
                     }
                 }
                 variables.Add(variableInfo);
                 return;
             }
-
             Type genericTypeDefinition = propertyType.GetGenericTypeDefinition();
             Type[] genericArgs = propertyType.GetGenericArguments();
             variableInfo = new VariableInfo(propertyName, propertyType, string.Empty);
             if (genericTypeDefinition == typeof(Dictionary<,>))
             {
-                Type keyType = genericArgs[0];
-                Type valueType = genericArgs[1];
-
-                ProcessProperty($"{propertyName}.Key", keyType,"", variableInfo.Children);
-                ProcessProperty($"{propertyName}.Value", valueType,"", variableInfo.Children);
+                ExtractCsVariablesRecursive($"{propertyName}.Key", genericArgs[0], "", variableInfo.Children);
+                ExtractCsVariablesRecursive($"{propertyName}.Value", genericArgs[1], "", variableInfo.Children);
 
             }
             else if (genericTypeDefinition == typeof(List<>))
             {
-                Type itemType = genericArgs[0];
-                ProcessProperty($"{propertyName}.Item", itemType, "", variableInfo.Children);
+                ExtractCsVariablesRecursive($"{propertyName}.Item", genericArgs[0], "", variableInfo.Children);
             }
             variables.Add(variableInfo);
         }
+
+        private static List<VariableInfo> ExtractEnumValues(VariableInfo variableInfo, Type propertyType)
+        {
+            List<VariableInfo> enumValues = new List<VariableInfo> ();
+            foreach (var item in propertyType.GetEnumValues())
+            {
+                var enumField = propertyType.GetField(item.ToString());
+                var validatorAttributeData = enumField.GetCustomAttributesData().FirstOrDefault(x => x.AttributeType == typeof(ValidatorTypeAttribute));
+                
+                if (validatorAttributeData == null)
+                {
+                    Type type = typeof(string);
+                    var converterAttribute = enumField.GetCustomAttributes(typeof(TypeConverterAttribute), false).FirstOrDefault() as TypeConverterAttribute;
+                    if (converterAttribute != null)
+                    {
+                        if (converterAttribute.ConverterTypeName.Contains("Boolean"))
+                        {
+                            type = typeof(bool);
+                        }
+                    }
+                    enumValues.Add(new VariableInfo(enumField.Name, type, ""));
+                }
+                else
+                {
+                    var constructorArguments = validatorAttributeData.ConstructorArguments;
+                    var validatorType = (ValidatorType)constructorArguments[0].Value;
+                    TypeHandler.MakeFunction(enumField.Name,validatorType, constructorArguments[1].ToString());
+                    enumValues.Add(new VariableInfo(enumField.Name, validatorType.ToString(), ""));
+                }
+            }
+            return enumValues;
+        }
         public static object GetDefaultValue(PropertyInfo property, object instance)
         {
-            var defaultValueAttribute = property.GetCustomAttribute<DefaultValueAttribute>();
-            if (defaultValueAttribute != null)
-            {
-                return defaultValueAttribute.Value;
-            }
-
             if (instance != null)
             {
                 var value = property.GetValue(instance);
@@ -241,23 +264,26 @@ namespace ConfigFileAssistant_v1
                     return value;
                 }
             }
-
             return string.Empty;
         }
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
-            errorVariableNames = new Dictionary<string,VariableInfo>();
-            var ymlVariableDict = ymlVariables.ToDictionary(v => v.Name);
+            errorVariableNames = new Dictionary<string, VariableInfo>();
+            var ymlDict = ymlVariables.ToDictionary(v => v.Name);
 
             foreach (var csVariable in csVariables)
             {
-                if (ymlVariableDict.TryGetValue(csVariable.Name, out var ymlVariable))
+                if (ymlDict.TryGetValue(csVariable.Name, out var ymlVariable))
                 {
-                    if((csVariable.Type.IsGenericType || ymlVariable.Type.IsGenericType) && !csVariable.TypeName.Equals(ymlVariable.TypeName))
+                    SetDefaultType(ymlVariable, csVariable);
+
+                    if (ymlVariable.Type != typeof(string) && csVariable.TypeName != ymlVariable.TypeName)
                     {
-                        ymlVariable.Result = Result.TYPE_MISMATCH;
-                        ymlVariable.DefaultType = csVariable.TypeName;
-                        errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
+                        if (csVariable.Type.IsEnum)
+                        {
+                            ymlVariable.SetEnumValues(csVariable.EnumValues);
+                        }
+                        SetResult(ymlVariable,Result.WRONG_VALUE);
                     }
                     else
                     {
@@ -267,10 +293,12 @@ namespace ConfigFileAssistant_v1
                 else
                 {
                     var variable = new VariableInfo(csVariable.Name, csVariable.Type, csVariable.Value);
-                    variable.Result = Result.ONLY_IN_CS;
-                    ymlVariables.Add(variable); 
-                    errorVariableNames.Add(variable.FullName, variable);
-
+                    if (csVariable.Type.IsEnum)
+                    {
+                        variable.SetEnumValues(csVariable.EnumValues);
+                    }
+                    SetResult(variable, Result.ONLY_IN_CS);
+                    ymlVariables.Add(variable);
                 }
             }
 
@@ -278,224 +306,311 @@ namespace ConfigFileAssistant_v1
             {
                 if (!csVariables.Any(v => v.Name == ymlVariable.Name))
                 {
-                    ymlVariable.Result = Result.ONLY_IN_YML; 
-                    errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
-
+                    SetResult(ymlVariable, Result.ONLY_IN_YML);
                 }
             }
             return ymlVariables;
         }
         private static void CompareChild(VariableInfo csVariable, VariableInfo ymlVariable, VariableInfo csParentVariable)
         {
+            Result result = Result.OK;
+            SetDefaultType(ymlVariable, csVariable);
+            // 둘다 자식이 있는 경우
             if (csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                foreach (var child in ymlVariable.Children)
+                if (csVariable.TypeName == ymlVariable.TypeName)
                 {
-                    CompareChild(csVariable.Children.Last(), child, csVariable);
-                }
-            }
-            else if (csVariable.HasChildren() && !ymlVariable.HasChildren())
-            {
-                if (csVariable.Type.IsEnum)
-                {
-                    ymlVariable.Result = Result.TYPE_MISMATCH;
-                    foreach (var item in csVariable.Children)
+                    foreach (var child in ymlVariable.Children)
                     {
-                        if (ymlVariable.Value.ToString().Equals(item.Name))
-                        {
-                            ymlVariable.Result = Result.OK;
-                            break;
-                        }
+                        CompareChild(csVariable.Children.Last(), child, csVariable);
                     }
-                    if(ymlVariable.Result == Result.TYPE_MISMATCH) 
-                    {
-                        errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
-
-                    }
-                }
-                else if (!csVariable.TypeName.Equals(ymlVariable.TypeName))
-                {
-                    ymlVariable.Result = Result.TYPE_MISMATCH;
-                    ymlVariable.DefaultType = csVariable.TypeName;
-                    errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
                 }
                 else
                 {
-                    ymlVariable.Result = Result.OK;
+                    result = Result.WRONG_VALUE;
                 }
-                
             }
+            // cs에는 있고 yml에는 없는 경우
+            else if (csVariable.HasChildren() && !ymlVariable.HasChildren())
+            {
+                if (ymlVariable.Value.ToString() != string.Empty)
+                {
+                    result = Result.WRONG_VALUE;
+                }
+                else
+                {
+                    result = Result.OK;
+                }
+            }
+            // cs에는 없고 yml에는 있는 경우
             else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
             {
-                ymlVariable.Result = Result.TYPE_MISMATCH;
-                ymlVariable.DefaultType = csVariable.TypeName;
-                errorVariableNames.Add(ymlVariable.FullName, ymlVariable);
+                result = Result.WRONG_VALUE;
+            }
+            // 둘다 자식이 없는 경우
+            else
+            {
+                if (csParentVariable != null && csParentVariable.Children[0].Type.IsEnum)
+                {
+                    result = IsValidatedEnumValue(ymlVariable, csParentVariable.Children[0]);
+                }
+                else
+                {
+                    result = CompareSingleValue(ymlVariable, csVariable);
+
+                }
+            }
+            SetResult(ymlVariable,result);
+        }
+
+        private static void SetResult(VariableInfo variableInfo, Result result)
+        {
+            variableInfo.Result = result;
+            if(result != Result.OK)
+            {
+                errorVariableNames.Add(variableInfo.FullName, variableInfo);
+            }
+        }
+        private static Result CompareSingleValue(VariableInfo ymlVariable, VariableInfo csVariable)
+        {
+            if (csVariable.IsEnumType())
+            {
+                ymlVariable.SetEnumValues(csVariable.EnumValues);
+                ymlVariable.DefaultValue = csVariable.Value;
+                var values = csVariable.EnumValues.ToDictionary(v => v.Name);
+                if (values.ContainsKey(ymlVariable.Value.ToString()))
+                {
+                    ymlVariable.Value = csVariable.Value;
+                    return Result.OK;
+                }
+                return Result.WRONG_VALUE;
             }
             else
             {
-                if (csParentVariable != null) 
+                if (TypeHandler.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) != string.Empty)
                 {
-                    ymlVariable.Result = Result.ONLY_IN_YML;
-                    var variable = csParentVariable.Children.First();
-                    foreach(var v in variable.Children)
-                    {
-                        if(ymlVariable.Name.Equals(v.Name))
-                        {
-                            ymlVariable.Result = Result.OK;
-                            break;
-                        }
-                    }
-                    if(ymlVariable.Result == Result.ONLY_IN_YML)
-                    {
-                        errorVariableNames.Add(ymlVariable.FullName,ymlVariable);
-                    }
+                    return Result.WRONG_VALUE;
                 }
+                return Result.OK;
             }
         }
-
-        public static bool HasError()
+        private static void SetDefaultType(VariableInfo ymlVariable, VariableInfo csVariable)
         {
-            return errorVariableNames.Count > 0;
-        }
-        public static void MigrateVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables, string filePath)
-        {
-            foreach (var key in errorVariableNames.Keys)
-            {
-                if (errorVariableNames.TryGetValue(key, out VariableInfo variableInfo))
-                {
-                    var names = key.Split('.');
-                    int index = 0;
-                    YamlNode targetNode = FindYamlNode(root, names, index, -1);
-
-                    if (targetNode != null && index < names.Length)
-                    {
-                        ModifyYamlNode(targetNode, names[names.Length - 1], variableInfo);
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"can not find node {key}");
-                    }
-                }
-            }
-            using (var writer = new StreamWriter(filePath))
-            {
-                yaml.Save(writer, assignAnchors: false);
-            }
-        }
-        public static void RemoveChild(List<VariableInfo> variables, string fullName)
-        {
-            VariableInfo target = variables.FirstOrDefault(v => v.FullName == fullName);
-            if (target == null)
-            {
-                var names = fullName.Split('.');
-                int index = 0;
-                VariableInfo currentParent = variables.FirstOrDefault(v => fullName.StartsWith(v.FullName)); ;
-
-                while (index < names.Length || target == null)
-                {
-                    var current = currentParent.Children.FirstOrDefault(v => fullName.StartsWith(v.FullName));
-                    if (current == null)
-                    {
-                        target = currentParent;
-                    }
-                    else
-                    {
-                        currentParent = current;
-                    }
-                    target = currentParent.Children.FirstOrDefault(v => fullName == v.FullName);
-
-                    index++;
-                }
-                currentParent.Children.Remove(target);  
-            }
-
-        }
-
-        public static void UpdateCellValueToNode(Dictionary<string,string> editedValues, string filePath)
-        {
-            Debug.WriteLine("backup");
-            MakeBackup(filePath);
-            foreach(var key in editedValues.Keys)
-            {
-                var names = key.Split('.');
-                int index = 0;
-                YamlNode targetNode = FindYamlNode(root, names, index, -1);
-                if (targetNode != null && index < names.Length)
-                {
-                    if (targetNode is YamlMappingNode mapping)
-                    {
-                        mapping.Children[names.Last()] = new YamlScalarNode(editedValues[key].ToString());
-                    }
-                }
-            }
+            ymlVariable.Type = csVariable.Type;
+            ymlVariable.TypeName = csVariable.TypeName; 
+            ymlVariable.DefaultValue = csVariable.Value.ToString();
            
         }
-        private static YamlNode FindYamlNode(YamlNode node, string[] names, int index, int arrayIndex)
+        private static Result IsValidatedEnumValue(VariableInfo ymlVariable, VariableInfo csVariable)
         {
-            if (index == names.Length - 1)
+            var values = csVariable.EnumValues.ToDictionary(v => v.Name);
+            if (values.ContainsKey(ymlVariable.Name))
             {
-                return node;
+                ymlVariable.Type = values[ymlVariable.Name].Type;
+                ymlVariable.TypeName = values[ymlVariable.Name].TypeName;
+                if (TypeHandler.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) == string.Empty)
+                {
+                    return Result.OK;
+                }
+                return Result.WRONG_VALUE;
+            }
+            return Result.ONLY_IN_YML;
+            
+        }
+        public static bool HasErrors()
+        {
+            return errorVariableNames != null && errorVariableNames.Count > 0;
+        }
+        public static Dictionary<string,VariableInfo> GetErrors()
+        {
+            return errorVariableNames;
+        }
+
+        public static void RemoveVariableFromErrorList(string error)
+        {
+            errorVariableNames.Remove(error);
+        }
+        
+        public static List<VariableInfo> GetParentVariables(string fullName)
+        {
+            var names = fullName.Split('.');
+            int depth = names.Length;
+
+            VariableInfo parent = null;
+            var currentList = ymlVariables;
+
+            for (int i = 0; i < depth-1; i++)
+            {
+                var currentVar = currentList.Find(v => v.Name == names[i]);
+                if (currentVar == null)
+                {
+                    return null;
+                }
+                parent = currentVar;
+                currentList = currentVar.Children;
+            }
+            return parent == null ? ymlVariables : parent.Children;
+            
+        }
+        public static bool InsertChildToParent(VariableInfo variable, VariableInfo newVariable)
+        {
+            if(variable == null)
+            {
+                Dictionary<string, VariableInfo> csVariablesDict = csVariables.ToDictionary(v => v.Name);
+                if(!csVariablesDict.ContainsKey(variable.Name))
+                {
+                    newVariable.Result = Result.ONLY_IN_YML;
+                }
+                ymlVariables.Insert(0, newVariable);
+                return true;
             }
 
-            if (node is YamlMappingNode mappingNode)
+            var parentVariables = GetParentVariables(variable.FullName);
+            int selectedIndex = parentVariables.IndexOf(variable);
+            if (selectedIndex < 0)
             {
-                var match = Regex.Match(names[index], @"^(\w+)\[(\d+)\]$");
-
-                if (match.Success)
+                return false;
+            }
+            else
+            {
+                parentVariables.Insert(selectedIndex + 1, newVariable);
+                return true;
+            }
+        }
+        public static bool AddChildToVariable(VariableInfo variableInfo)
+        {
+            var parentVariables = GetParentVariables(variableInfo.FullName);
+            var target = parentVariables.Find(v => v.Name == variableInfo.Name);
+            if (target != null)
+            {
+                target.Result = Result.OK;
+                return true;
+            }
+            return false;
+        }
+        public static bool RemoveChildFromVariable(VariableInfo variableInfo)
+        {
+            var parentVariables = GetParentVariables(variableInfo.FullName);
+            
+            var target = parentVariables.Find(v => v.Name == variableInfo.Name);
+            if(target != null)
+            {
+                if (target.HasChildren())
                 {
-                    string arrayName = match.Groups[1].Value;
-                    arrayIndex = int.Parse(match.Groups[2].Value);
+                    target.Children.Clear();
+                }
+                parentVariables.Remove(target);
+                return true;
+            }
+            return false;
+        }
 
-                    if (mappingNode.Children.TryGetValue(new YamlScalarNode(arrayName), out YamlNode arrayNode) &&
-                        arrayNode is YamlSequenceNode sequenceNode &&
-                        arrayIndex < sequenceNode.Children.Count)
+        public static bool ModifyChildFromVariable(VariableInfo variableInfo)
+        {
+            var parentVariables = GetParentVariables(variableInfo.FullName);
+
+            var target = parentVariables.Find(v => v.Name == variableInfo.Name);
+            if(target != null)
+            {
+                if (target.HasChildren())
+                {
+                    target.Children.Clear();
+                }
+                target.Value = target.DefaultValue;
+                target.Result = Result.OK;
+                return true;
+            }
+            return false;
+        }
+        public static string UpdateChild(string fullName, object value)
+        {
+            var parentVariables = GetParentVariables(fullName);
+            var names = fullName.Split('.');
+            var target = parentVariables.Find(v => v.Name == names.Last());
+            var resultMessage = string.Empty;
+            if (target != null) 
+            {
+                resultMessage = TypeHandler.IsValidateType(target,value.ToString());
+                if (resultMessage == string.Empty)
+                {
+                    target.Value = value;
+                    if (errorVariableNames.ContainsKey(fullName))
                     {
-                        return FindYamlNode(sequenceNode.Children[arrayIndex], names, index + 1, arrayIndex);
+                        errorVariableNames.Remove(fullName);
                     }
+                }
+            }
+            else
+            {
+                resultMessage = $"{fullName} Variable not found.";
+            }
+
+            return resultMessage;
+        }
+
+
+        public static void MakeYamlFile(List<VariableInfo> variables, string filePath)
+        {
+            MakeBackup(filePath);
+            YamlStream yaml = new YamlStream();
+            YamlMappingNode root = new YamlMappingNode();
+
+            foreach (var variable in variables)
+            {
+                AddVariableToYamlNode(root, variable);
+            }
+
+            yaml.Documents.Add(new YamlDocument(root));
+            using (var writer = new StreamWriter(filePath))
+            {
+                yaml.Save(writer, false);
+            }
+        }
+
+        private static void AddVariableToYamlNode(YamlNode parentNode, VariableInfo variable)
+        {
+            if (variable.HasChildren())
+            {
+                YamlNode childNode;
+
+                if (variable.TypeName == typeof(Dictionary<,>).Name)
+                {
+                    childNode = new YamlMappingNode();
                 }
                 else
                 {
-                    if (mappingNode.Children.TryGetValue(new YamlScalarNode(names[index]), out YamlNode nextNode))
-                    {
-                        return FindYamlNode(nextNode, names, index + 1, arrayIndex);
-                    }
+                    childNode = new YamlSequenceNode();
                 }
-            }
-
-            return null;
-        }
-
-        private static void ModifyYamlNode(YamlNode node, string name, VariableInfo variableInfo)
-        {
-            if (node is YamlMappingNode mapping)
-            {
-                switch (variableInfo.Result)
+                
+                foreach (var child in variable.Children)
                 {
-                    case Result.ONLY_IN_CS:
-                        mapping.Add(new YamlScalarNode(name), new YamlScalarNode(variableInfo.Value.ToString()));
-                        break;
-                    case Result.TYPE_MISMATCH:
-                        if (variableInfo.DefaultType.Equals(typeof(Dictionary<,>).Name))
-                        {
-                            mapping.Children[name] = new YamlMappingNode();
-                        }
-                        else if (variableInfo.DefaultType.Equals(typeof(List<>).Name))
-                        {
-                            mapping.Children[name] = new YamlSequenceNode();
-                        }
-                        else
-                        {
-                            mapping.Children[name] = new YamlScalarNode(variableInfo.Value.ToString());
-                        }
-                        break;
-                    case Result.ONLY_IN_YML:
-                        mapping.Children.Remove(name);
-                        break;
-                    default:
-                        break;
+                    AddVariableToYamlNode(childNode, child);
+                }
+
+                if (parentNode is YamlMappingNode mappingNode)
+                {
+                    mappingNode.Add(variable.Name, childNode);
+                }
+                else if (parentNode is YamlSequenceNode sequenceNode)
+                {
+                    sequenceNode.Add(childNode);
+                }
+            }
+            else
+            {
+                YamlNode valueNode = new YamlScalarNode(variable.Value?.ToString() ?? string.Empty);
+
+                if (parentNode is YamlMappingNode mappingNode)
+                {
+                    mappingNode.Add(variable.Name, valueNode);
+                }
+                else if (parentNode is YamlSequenceNode sequenceNode)
+                {
+                    sequenceNode.Add(valueNode);
                 }
             }
         }
+
         private static void MakeBackup(string filePath)
         {
             string backupFolder = Path.Combine(Path.GetDirectoryName(filePath), "configbackup");

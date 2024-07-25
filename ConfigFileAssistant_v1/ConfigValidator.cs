@@ -78,8 +78,7 @@ namespace ConfigFileAssistant_v1
         OK,
         ONLY_IN_CS,
         ONLY_IN_YML,
-        WRONG_VALUE,
-        BLANK
+        WRONG_VALUE
     }
 
     public class ConfigValidator

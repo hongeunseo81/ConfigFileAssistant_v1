@@ -30,7 +30,6 @@
         {
             this.components = new System.ComponentModel.Container();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.menuButton = new System.Windows.Forms.Button();
             this.editButton = new System.Windows.Forms.Button();
             this.panel2 = new System.Windows.Forms.Panel();
             this.nextButton = new System.Windows.Forms.Button();
@@ -38,33 +37,22 @@
             this.VariableDataTreeListView = new BrightIdeasSoftware.DataTreeListView();
             this.expandAllButton = new System.Windows.Forms.Button();
             this.fixButton = new System.Windows.Forms.Button();
-            this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.VariableDataTreeListView)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.menuButton);
-            this.panel1.Controls.Add(this.editButton);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(949, 55);
             this.panel1.TabIndex = 2;
             // 
-            // menuButton
-            // 
-            this.menuButton.Location = new System.Drawing.Point(907, 12);
-            this.menuButton.Name = "menuButton";
-            this.menuButton.Size = new System.Drawing.Size(28, 34);
-            this.menuButton.TabIndex = 8;
-            this.menuButton.UseVisualStyleBackColor = true;
-            // 
             // editButton
             // 
             this.editButton.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.editButton.Location = new System.Drawing.Point(868, 12);
+            this.editButton.Location = new System.Drawing.Point(842, 123);
             this.editButton.Name = "editButton";
             this.editButton.Size = new System.Drawing.Size(33, 34);
             this.editButton.TabIndex = 7;
@@ -134,13 +122,12 @@
             // 
             // fixButton
             // 
-            this.fixButton.Location = new System.Drawing.Point(856, 123);
+            this.fixButton.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.fixButton.Location = new System.Drawing.Point(881, 123);
             this.fixButton.Name = "fixButton";
-            this.fixButton.Size = new System.Drawing.Size(58, 34);
-            this.fixButton.TabIndex = 7;
-            this.fixButton.Text = "FIX";
+            this.fixButton.Size = new System.Drawing.Size(33, 34);
+            this.fixButton.TabIndex = 8;
             this.fixButton.UseVisualStyleBackColor = true;
-            this.fixButton.Click += new System.EventHandler(this.FixButton_Click);
             // 
             // MainForm
             // 
@@ -150,13 +137,13 @@
             this.ClientSize = new System.Drawing.Size(949, 986);
             this.Controls.Add(this.fixButton);
             this.Controls.Add(this.expandAllButton);
+            this.Controls.Add(this.editButton);
             this.Controls.Add(this.VariableDataTreeListView);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Name = "MainForm";
             this.Text = "ConfigFileAssistant";
             this.Load += new System.EventHandler(this.Form1_Load);
-            this.panel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.VariableDataTreeListView)).EndInit();
             this.ResumeLayout(false);
@@ -172,7 +159,6 @@
         private System.Windows.Forms.Button nextButton;
         private System.Windows.Forms.Button cancelButton;
         private System.Windows.Forms.Button editButton;
-        private System.Windows.Forms.Button menuButton;
         private System.Windows.Forms.Button fixButton;
     }
 }

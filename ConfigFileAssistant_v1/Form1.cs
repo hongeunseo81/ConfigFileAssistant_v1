@@ -26,10 +26,10 @@ namespace ConfigFileAssistant_v1
         private Image CautionImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/caution.png");
         private Image EditImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/edit.png");
         private Image BookImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/book.png");
-        private Image MenuImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/dots.png");
+        private Image FixImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/technics.png");
         private bool IsExpanded = true;
         private bool isEditMode = false;
-
+        private ToolTip tooltip;
         private ContextMenuStrip contextMenuStrip;
         public MainForm()
         {
@@ -57,14 +57,17 @@ namespace ConfigFileAssistant_v1
             EditImageList.ImageSize = new Size(25, 25);
             EditImageList.Images.Add("edit", EditImageButton);
             EditImageList.Images.Add("book", BookImageButton);
-            EditImageList.Images.Add("menu", MenuImageButton);
+            EditImageList.Images.Add("fix", FixImageButton);
 
+            tooltip = new ToolTip();
             editButton.ImageList = EditImageList;
             editButton.Image = EditImageList.Images[0];
+            tooltip.SetToolTip(editButton, "Current View: Read-Only, Click to Edit");
             RemoveButtonBorder(editButton);
 
-            menuButton.Image = EditImageList.Images[2];
-            RemoveButtonBorder(menuButton);
+            fixButton.Image = EditImageList.Images[2];
+            tooltip.SetToolTip(fixButton, "Fix All Errors");
+            RemoveButtonBorder(fixButton);
 
         }
 
@@ -303,7 +306,7 @@ namespace ConfigFileAssistant_v1
                 return;
 
             var variableInfo = (VariableInfo)e.Model;
-            if ((variableInfo.Result != Result.OK && variableInfo.Result != Result.BLANK) && e.ColumnIndex == 0)
+            if (variableInfo.Result != Result.OK  && e.ColumnIndex == 0)
             {
                 Cursor = Cursors.Hand;
             }
@@ -423,41 +426,21 @@ namespace ConfigFileAssistant_v1
             {
                 isEditMode = false;
                 editButton.Image = EditImageList.Images["edit"];
+                tooltip.SetToolTip(editButton, "Current View: Read View, Click to Edit View");
             }
             else
             {
                 isEditMode = true;
                 editButton.Image = EditImageList.Images["book"];
+                tooltip.SetToolTip(editButton, "Current View: Edit, Click to Read View");
             }
             SetEditable(isEditMode);
         }
 
-        private void FixButton_Click(object sender, EventArgs e)
-        {
-            var errors = ConfigValidator.GetErrors();
-            if (errors != null && errors.Count > 0)
-            {
-                List<string> fixedErrorsList = new List<string>();
-                foreach (var key in errors.Keys)
-                {
-                    if (!FixErrors(errors[key]))
-                    {
-                        MessageBox.Show("A problem occurred while fixing the error.");
-                        return;
-                    }
-                    fixedErrorsList.Add(key);
-                }
 
-                foreach (var fixedError in fixedErrorsList)
-                {
-                    ConfigValidator.RemoveVariableFromErrorList(fixedError);
-                }
-                VariableDataTreeListView.Refresh();
-            }
-            else
-            {
-                MessageBox.Show("There are no errors to fix.");
-            }
+        private void fixButton_Click_1(object sender, EventArgs e)
+        {
+
         }
     }
 

@@ -163,11 +163,11 @@ namespace ConfigFileAssistant_v1
                 string selectedFilePath = openFileDialog.FileName;
                 filePathLabel.Text = selectedFilePath;
                 ConfigValidator.ClearAllData();
+                ConfigValidator.Init();
                 SetupData();
                 AddVariablesToDataGridView(resultVariables, VariableDataTreeListView);
             }
         }
-
 
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
         {
@@ -396,6 +396,17 @@ namespace ConfigFileAssistant_v1
                 e.Control.Width = e.CellBounds.Width;
                 e.Control.Height = e.CellBounds.Height;
 
+               if(variableInfo.Type == typeof(bool))
+                {
+                    CheckBox cb = new CheckBox();
+                    cb.Bounds = e.CellBounds;
+                    cb.Checked = variableInfo.Value.ToString() == "True" ? true : false;
+                    cb.CheckedChanged += (s, args) =>
+                    {
+                        e.NewValue = cb.Checked;
+                    };
+                    e.Control = cb;
+                }
             }
             else
             {

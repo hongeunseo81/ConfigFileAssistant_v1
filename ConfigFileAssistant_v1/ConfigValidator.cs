@@ -102,8 +102,6 @@ namespace ConfigFileAssistant_v1
             csVariables = null;
             ymlVariables = null;
             TypeHandler.ClearAllData();
-            Init();
-
         }
         public static void LoadYamlFile(string filePath)
         {

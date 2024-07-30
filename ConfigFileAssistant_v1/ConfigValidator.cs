@@ -78,8 +78,7 @@ namespace ConfigFileAssistant_v1
         OK,
         ONLY_IN_CS,
         ONLY_IN_YML,
-        WRONG_VALUE,
-        BLANK
+        WRONG_VALUE
     }
 
     public class ConfigValidator
@@ -95,10 +94,17 @@ namespace ConfigFileAssistant_v1
         {
             instance = Activator.CreateInstance(typeof(Config));
             csVariables = new List<VariableInfo>();
+            yaml = new YamlStream();
+        }
+        public static void ClearAllData()
+        {
+            errorVariableNames = null;
+            csVariables = null;
+            ymlVariables = null;
+            TypeHandler.ClearAllData();
         }
         public static void LoadYamlFile(string filePath)
         {
-            yaml = new YamlStream();
             using (var reader = new StreamReader(filePath))
             {
                 yaml.Load(reader);
@@ -313,8 +319,9 @@ namespace ConfigFileAssistant_v1
         }
         private static void CompareChild(VariableInfo csVariable, VariableInfo ymlVariable, VariableInfo csParentVariable)
         {
-            Result result = Result.OK;
+            Result result = ymlVariable.Result;
             SetDefaultType(ymlVariable, csVariable);
+
             // 둘다 자식이 있는 경우
             if (csVariable.HasChildren() && ymlVariable.HasChildren())
             {
@@ -330,36 +337,29 @@ namespace ConfigFileAssistant_v1
                     result = Result.WRONG_VALUE;
                 }
             }
-            // cs에는 있고 yml에는 없는 경우
-            else if (csVariable.HasChildren() && !ymlVariable.HasChildren())
+
+            // 둘다 자식이 없는 경우
+            else if (!csVariable.HasChildren() && !ymlVariable.HasChildren())
             {
-                if (ymlVariable.Value.ToString() != string.Empty)
+                if(ymlVariable.Result == Result.OK)
                 {
-                    result = Result.WRONG_VALUE;
+                    if (csParentVariable != null && csParentVariable.Children[0].Type.IsEnum)
+                    {
+                        result = IsValidatedEnumValue(ymlVariable, csParentVariable.Children[0]);
+                    }
+                    else
+                    {
+                        result = CompareSingleValue(ymlVariable, csVariable);
+
+                    }
                 }
-                else
-                {
-                    result = Result.OK;
-                }
+                
             }
-            // cs에는 없고 yml에는 있는 경우
-            else if (!csVariable.HasChildren() && ymlVariable.HasChildren())
+            else
             {
                 result = Result.WRONG_VALUE;
             }
-            // 둘다 자식이 없는 경우
-            else
-            {
-                if (csParentVariable != null && csParentVariable.Children[0].Type.IsEnum)
-                {
-                    result = IsValidatedEnumValue(ymlVariable, csParentVariable.Children[0]);
-                }
-                else
-                {
-                    result = CompareSingleValue(ymlVariable, csVariable);
-
-                }
-            }
+            
             SetResult(ymlVariable,result);
         }
 
@@ -548,14 +548,12 @@ namespace ConfigFileAssistant_v1
             return resultMessage;
         }
 
-
-        public static void MakeYamlFile(List<VariableInfo> variables, string filePath)
+        public static void MakeYamlFile(string filePath)
         {
-            MakeBackup(filePath);
             YamlStream yaml = new YamlStream();
             YamlMappingNode root = new YamlMappingNode();
 
-            foreach (var variable in variables)
+            foreach (var variable in ymlVariables)
             {
                 AddVariableToYamlNode(root, variable);
             }
@@ -566,6 +564,7 @@ namespace ConfigFileAssistant_v1
                 yaml.Save(writer, false);
             }
         }
+
 
         private static void AddVariableToYamlNode(YamlNode parentNode, VariableInfo variable)
         {

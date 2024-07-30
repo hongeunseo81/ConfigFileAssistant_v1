@@ -39,6 +39,7 @@
             // 
             // panel1
             // 
+            this.panel1.BackColor = System.Drawing.Color.White;
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
@@ -57,16 +58,20 @@
             // 
             // createButton
             // 
+            this.createButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
+            this.createButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.createButton.ForeColor = System.Drawing.Color.White;
             this.createButton.Location = new System.Drawing.Point(424, 28);
             this.createButton.Name = "createButton";
             this.createButton.Size = new System.Drawing.Size(125, 46);
             this.createButton.TabIndex = 1;
             this.createButton.Text = "Create";
-            this.createButton.UseVisualStyleBackColor = true;
+            this.createButton.UseVisualStyleBackColor = false;
             this.createButton.Click += new System.EventHandler(this.createButton_Click);
             // 
             // cancelButton
             // 
+            this.cancelButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.cancelButton.Location = new System.Drawing.Point(261, 28);
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(125, 46);
@@ -77,16 +82,17 @@
             // dataGridView
             // 
             this.dataGridView.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView.Location = new System.Drawing.Point(12, 56);
+            this.dataGridView.Location = new System.Drawing.Point(23, 56);
             this.dataGridView.Name = "dataGridView";
             this.dataGridView.RowTemplate.Height = 23;
-            this.dataGridView.Size = new System.Drawing.Size(736, 124);
+            this.dataGridView.Size = new System.Drawing.Size(725, 124);
             this.dataGridView.TabIndex = 2;
             // 
             // ObjectCreater
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.White;
             this.ClientSize = new System.Drawing.Size(768, 290);
             this.Controls.Add(this.dataGridView);
             this.Controls.Add(this.panel2);

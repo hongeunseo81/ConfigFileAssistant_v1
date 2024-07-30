@@ -26,6 +26,13 @@ namespace ConfigTypeFinder
             types.Add(typeof(List<>).Name, typeof(List<>));
             types.Add(typeof(string).Name, typeof(string));
         }
+
+        public static void ClearAllData()
+        {
+            validatorFunction.Clear();
+            FunctionArgs.Clear();
+            types.Clear();
+        }
         public static Dictionary<string, Type> GetAllTypes()
         {
             return types;

@@ -31,7 +31,7 @@ namespace ConfigFileAssistant_v1
             TypeName = typeName;
             Value = value;
             DefaultValue = string.Empty;
-            Result = Result.OK;
+            Result = Result.Ok;
             Children = new List<VariableInfo>();
         }
         public VariableInfo(string name, Type type, object value)
@@ -75,54 +75,55 @@ namespace ConfigFileAssistant_v1
 
     public enum Result
     {
-        OK,
-        ONLY_IN_CS,
-        ONLY_IN_YML,
-        WRONG_VALUE
+        Ok,
+        OnlyInCs,
+        OnlyInYml,
+        WrongValue
     }
 
     public class ConfigValidator
     {
-        private static Object instance;
-        private static YamlMappingNode root;
-        private static YamlStream yaml;
-        private static List<VariableInfo> csVariables;
-        private static List<VariableInfo> ymlVariables;
-        private static Dictionary<String, VariableInfo> errorVariableNames;
+        private static Object Instance;
+        private static YamlMappingNode Root;
+        private static YamlStream Yaml;
+        private static List<VariableInfo> CsVariables;
+        private static List<VariableInfo> YmlVariables;
+        private static Dictionary<String, VariableInfo> ErrorVariables;
 
         public static void Init()
         {
-            instance = Activator.CreateInstance(typeof(Config));
-            csVariables = new List<VariableInfo>();
-            yaml = new YamlStream();
+            Instance = Activator.CreateInstance(typeof(Config));
+            CsVariables = new List<VariableInfo>();
+            Yaml = new YamlStream();
         }
         public static void ClearAllData()
         {
-            errorVariableNames = null;
-            csVariables = null;
-            ymlVariables = null;
+            ErrorVariables = null;
+            CsVariables = null;
+            YmlVariables = null;
             TypeHandler.ClearAllData();
         }
         public static void LoadYamlFile(string filePath)
         {
             using (var reader = new StreamReader(filePath))
             {
-                yaml.Load(reader);
+                Yaml.Load(reader);
             }
-            if (yaml.Documents.Count != 0)
+            if (Yaml.Documents.Count != 0)
             {
-                root = (YamlMappingNode)yaml.Documents[0].RootNode;
+                Root = (YamlMappingNode)Yaml.Documents[0].RootNode;
             }
             else
             {
-                root = new YamlMappingNode();
+                Root = new YamlMappingNode();
             }
         }
+
         public static List<VariableInfo> ExtractYmlVariables()
         {
-            ymlVariables = new List<VariableInfo>();
-            ExtractYmlVariablesRecursive(root, ymlVariables, "");
-            return ymlVariables;
+            YmlVariables = new List<VariableInfo>();
+            ExtractYmlVariablesRecursive(Root, YmlVariables, "");
+            return YmlVariables;
         }
 
         private static void ExtractYmlVariablesRecursive(YamlNode node, List<VariableInfo> variables, string prefix)
@@ -191,10 +192,10 @@ namespace ConfigFileAssistant_v1
 
             foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                object defaultValue = GetDefaultValue(property, instance);
-                ExtractCsVariablesRecursive(property.Name, property.PropertyType, defaultValue, csVariables);
+                object defaultValue = GetDefaultValue(property, Instance);
+                ExtractCsVariablesRecursive(property.Name, property.PropertyType, defaultValue, CsVariables);
             }
-            return csVariables;
+            return CsVariables;
         }
         private static void ExtractCsVariablesRecursive(string propertyName, Type propertyType, Object value, List<VariableInfo> variables)
         {
@@ -274,7 +275,7 @@ namespace ConfigFileAssistant_v1
         }
         public static List<VariableInfo> CompareVariables(List<VariableInfo> csVariables, List<VariableInfo> ymlVariables)
         {
-            errorVariableNames = new Dictionary<string, VariableInfo>();
+            ErrorVariables = new Dictionary<string, VariableInfo>();
             var ymlDict = ymlVariables.ToDictionary(v => v.Name);
 
             foreach (var csVariable in csVariables)
@@ -289,7 +290,7 @@ namespace ConfigFileAssistant_v1
                         {
                             ymlVariable.SetEnumValues(csVariable.EnumValues);
                         }
-                        SetResult(ymlVariable,Result.WRONG_VALUE);
+                        SetResult(ymlVariable,Result.WrongValue);
                     }
                     else
                     {
@@ -303,7 +304,7 @@ namespace ConfigFileAssistant_v1
                     {
                         variable.SetEnumValues(csVariable.EnumValues);
                     }
-                    SetResult(variable, Result.ONLY_IN_CS);
+                    SetResult(variable, Result.OnlyInCs);
                     ymlVariables.Add(variable);
                 }
             }
@@ -312,7 +313,7 @@ namespace ConfigFileAssistant_v1
             {
                 if (!csVariables.Any(v => v.Name == ymlVariable.Name))
                 {
-                    SetResult(ymlVariable, Result.ONLY_IN_YML);
+                    SetResult(ymlVariable, Result.OnlyInYml);
                 }
             }
             return ymlVariables;
@@ -334,14 +335,14 @@ namespace ConfigFileAssistant_v1
                 }
                 else
                 {
-                    result = Result.WRONG_VALUE;
+                    result = Result.WrongValue;
                 }
             }
 
             // 둘다 자식이 없는 경우
             else if (!csVariable.HasChildren() && !ymlVariable.HasChildren())
             {
-                if(ymlVariable.Result == Result.OK)
+                if(ymlVariable.Result == Result.Ok)
                 {
                     if (csParentVariable != null && csParentVariable.Children[0].Type.IsEnum)
                     {
@@ -357,7 +358,7 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
-                result = Result.WRONG_VALUE;
+                result = Result.WrongValue;
             }
             
             SetResult(ymlVariable,result);
@@ -366,9 +367,9 @@ namespace ConfigFileAssistant_v1
         private static void SetResult(VariableInfo variableInfo, Result result)
         {
             variableInfo.Result = result;
-            if(result != Result.OK)
+            if(result != Result.Ok)
             {
-                errorVariableNames.Add(variableInfo.FullName, variableInfo);
+                ErrorVariables.Add(variableInfo.FullName, variableInfo);
             }
         }
         private static Result CompareSingleValue(VariableInfo ymlVariable, VariableInfo csVariable)
@@ -380,18 +381,19 @@ namespace ConfigFileAssistant_v1
                 var values = csVariable.EnumValues.ToDictionary(v => v.Name);
                 if (values.ContainsKey(ymlVariable.Value.ToString()))
                 {
-                    ymlVariable.Value = csVariable.Value;
-                    return Result.OK;
+                    Type targetType = csVariable.Value.GetType();
+                    ymlVariable.Value = Enum.Parse(targetType, ymlVariable.Value.ToString());
+                    return Result.Ok;
                 }
-                return Result.WRONG_VALUE;
+                return Result.WrongValue;
             }
             else
             {
                 if (TypeHandler.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) != string.Empty)
                 {
-                    return Result.WRONG_VALUE;
+                    return Result.WrongValue;
                 }
-                return Result.OK;
+                return Result.Ok;
             }
         }
         private static void SetDefaultType(VariableInfo ymlVariable, VariableInfo csVariable)
@@ -410,25 +412,25 @@ namespace ConfigFileAssistant_v1
                 ymlVariable.TypeName = values[ymlVariable.Name].TypeName;
                 if (TypeHandler.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) == string.Empty)
                 {
-                    return Result.OK;
+                    return Result.Ok;
                 }
-                return Result.WRONG_VALUE;
+                return Result.WrongValue;
             }
-            return Result.ONLY_IN_YML;
+            return Result.OnlyInYml;
             
         }
         public static bool HasErrors()
         {
-            return errorVariableNames != null && errorVariableNames.Count > 0;
+            return ErrorVariables != null && ErrorVariables.Count > 0;
         }
         public static Dictionary<string,VariableInfo> GetErrors()
         {
-            return errorVariableNames;
+            return ErrorVariables;
         }
 
         public static void RemoveVariableFromErrorList(string error)
         {
-            errorVariableNames.Remove(error);
+            ErrorVariables.Remove(error);
         }
         
         public static List<VariableInfo> GetParentVariables(string fullName)
@@ -437,7 +439,7 @@ namespace ConfigFileAssistant_v1
             int depth = names.Length;
 
             VariableInfo parent = null;
-            var currentList = ymlVariables;
+            var currentList = YmlVariables;
 
             for (int i = 0; i < depth-1; i++)
             {
@@ -449,19 +451,21 @@ namespace ConfigFileAssistant_v1
                 parent = currentVar;
                 currentList = currentVar.Children;
             }
-            return parent == null ? ymlVariables : parent.Children;
+            return parent == null ? YmlVariables : parent.Children;
             
         }
         public static bool InsertChildToParent(VariableInfo variable, VariableInfo newVariable)
         {
             if(variable == null)
             {
-                Dictionary<string, VariableInfo> csVariablesDict = csVariables.ToDictionary(v => v.Name);
-                if(!csVariablesDict.ContainsKey(variable.Name))
+                Dictionary<string, VariableInfo> csVariablesDict = CsVariables.ToDictionary(v => v.Name);
+                if(csVariablesDict.ContainsKey(newVariable.Name))
                 {
-                    newVariable.Result = Result.ONLY_IN_YML;
+                    return false;
                 }
-                ymlVariables.Insert(0, newVariable);
+
+                newVariable.Result = Result.OnlyInYml;
+                YmlVariables.Insert(0, newVariable);
                 return true;
             }
 
@@ -473,6 +477,11 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
+                Dictionary<string, VariableInfo> parentVariableDict = parentVariables.ToDictionary(v => v.Name);
+                if(parentVariableDict.ContainsKey(newVariable.Name))
+                {
+                    return false;
+                }
                 parentVariables.Insert(selectedIndex + 1, newVariable);
                 return true;
             }
@@ -483,7 +492,7 @@ namespace ConfigFileAssistant_v1
             var target = parentVariables.Find(v => v.Name == variableInfo.Name);
             if (target != null)
             {
-                target.Result = Result.OK;
+                target.Result = Result.Ok;
                 return true;
             }
             return false;
@@ -517,7 +526,7 @@ namespace ConfigFileAssistant_v1
                     target.Children.Clear();
                 }
                 target.Value = target.DefaultValue;
-                target.Result = Result.OK;
+                target.Result = Result.Ok;
                 return true;
             }
             return false;
@@ -534,9 +543,9 @@ namespace ConfigFileAssistant_v1
                 if (resultMessage == string.Empty)
                 {
                     target.Value = value;
-                    if (errorVariableNames.ContainsKey(fullName))
+                    if (ErrorVariables.ContainsKey(fullName))
                     {
-                        errorVariableNames.Remove(fullName);
+                        ErrorVariables.Remove(fullName);
                     }
                 }
             }
@@ -553,7 +562,7 @@ namespace ConfigFileAssistant_v1
             YamlStream yaml = new YamlStream();
             YamlMappingNode root = new YamlMappingNode();
 
-            foreach (var variable in ymlVariables)
+            foreach (var variable in YmlVariables)
             {
                 AddVariableToYamlNode(root, variable);
             }
@@ -610,12 +619,12 @@ namespace ConfigFileAssistant_v1
             }
         }
 
-        private static void MakeBackup(string filePath)
+        public static void MakeBackup(string backupFileDirectory, string file)
         {
-            string backupFolder = Path.Combine(Path.GetDirectoryName(filePath), "configbackup");
+            string backupFolder = Path.Combine(backupFileDirectory, "configbackup");
             Directory.CreateDirectory(backupFolder);
             string backupFilePath = Path.Combine(backupFolder, $"config_{DateTime.Now:yyyyMMddHHmmss}.yml");
-            File.Copy(filePath, backupFilePath, true);
+            File.Copy(file, backupFilePath, true);
         }
     }
 }

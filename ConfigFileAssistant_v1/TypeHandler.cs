@@ -25,14 +25,9 @@ namespace ConfigTypeFinder
             types.Add(typeof(Dictionary<,>).Name, typeof(Dictionary<,>));
             types.Add(typeof(List<>).Name, typeof(List<>));
             types.Add(typeof(string).Name, typeof(string));
+            types.Add(typeof(bool).Name, typeof(bool));
         }
 
-        public static void ClearAllData()
-        {
-            validatorFunction.Clear();
-            FunctionArgs.Clear();
-            types.Clear();
-        }
         public static Dictionary<string, Type> GetAllTypes()
         {
             return types;
@@ -112,6 +107,12 @@ namespace ConfigTypeFinder
                 return message;
             }
             return string.Empty;
+        }
+
+        public static void ConvertTypeNameToType(VariableInfo newVariable)
+        {
+            var typeName = newVariable.TypeName;
+            newVariable.Type = types[typeName];
         }
     }
 

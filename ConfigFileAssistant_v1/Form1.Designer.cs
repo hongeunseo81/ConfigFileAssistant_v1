@@ -52,20 +52,27 @@
             this.panel19 = new System.Windows.Forms.Panel();
             this.label4 = new System.Windows.Forms.Label();
             this.panel13 = new System.Windows.Forms.Panel();
-            this.SaveAsButton = new System.Windows.Forms.Button();
-            this.FixAllButton = new System.Windows.Forms.Button();
-            this.ResetButton = new System.Windows.Forms.Button();
+            this.panel23 = new System.Windows.Forms.Panel();
+            this.BackupBrowseButton = new System.Windows.Forms.Button();
+            this.BackupPathTextBox = new System.Windows.Forms.TextBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.panel22 = new System.Windows.Forms.Panel();
+            this.FileBrowseButton = new System.Windows.Forms.Button();
+            this.ConfigFilePathTextBox = new System.Windows.Forms.TextBox();
+            this.label8 = new System.Windows.Forms.Label();
+            this.filePathLabel = new System.Windows.Forms.Label();
             this.panel16 = new System.Windows.Forms.Panel();
             this.label3 = new System.Windows.Forms.Label();
             this.panel15 = new System.Windows.Forms.Panel();
             this.panel14 = new System.Windows.Forms.Panel();
+            this.SaveAsButton = new System.Windows.Forms.Button();
+            this.FixAllButton = new System.Windows.Forms.Button();
+            this.ResetButton = new System.Windows.Forms.Button();
             this.ModeButton = new System.Windows.Forms.Button();
             this.columnButtonRenderer1 = new BrightIdeasSoftware.ColumnButtonRenderer();
             this.columnButtonRenderer2 = new BrightIdeasSoftware.ColumnButtonRenderer();
             this.panel5 = new System.Windows.Forms.Panel();
             this.panel12 = new System.Windows.Forms.Panel();
-            this.BrowseButton = new System.Windows.Forms.Button();
-            this.filePathLabel = new System.Windows.Forms.Label();
             this.panel7 = new System.Windows.Forms.Panel();
             this.panel17 = new System.Windows.Forms.Panel();
             this.label2 = new System.Windows.Forms.Label();
@@ -87,6 +94,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.resultPictureBox)).BeginInit();
             this.panel19.SuspendLayout();
             this.panel13.SuspendLayout();
+            this.panel23.SuspendLayout();
+            this.panel22.SuspendLayout();
             this.panel16.SuspendLayout();
             this.panel5.SuspendLayout();
             this.panel12.SuspendLayout();
@@ -286,7 +295,7 @@
             this.panel18.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.panel18.Location = new System.Drawing.Point(42, 545);
             this.panel18.Name = "panel18";
-            this.panel18.Size = new System.Drawing.Size(522, 40);
+            this.panel18.Size = new System.Drawing.Size(547, 40);
             this.panel18.TabIndex = 21;
             // 
             // label7
@@ -307,16 +316,16 @@
             this.LogListBox.ItemHeight = 12;
             this.LogListBox.Location = new System.Drawing.Point(42, 585);
             this.LogListBox.Name = "LogListBox";
-            this.LogListBox.Size = new System.Drawing.Size(522, 196);
+            this.LogListBox.Size = new System.Drawing.Size(547, 196);
             this.LogListBox.TabIndex = 20;
             // 
             // resultPictureBox
             // 
             this.resultPictureBox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.resultPictureBox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.resultPictureBox.Location = new System.Drawing.Point(42, 168);
+            this.resultPictureBox.Location = new System.Drawing.Point(42, 181);
             this.resultPictureBox.Name = "resultPictureBox";
-            this.resultPictureBox.Size = new System.Drawing.Size(522, 265);
+            this.resultPictureBox.Size = new System.Drawing.Size(547, 295);
             this.resultPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.resultPictureBox.TabIndex = 17;
             this.resultPictureBox.TabStop = false;
@@ -326,9 +335,9 @@
             this.panel19.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
             this.panel19.Controls.Add(this.label4);
             this.panel19.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel19.Location = new System.Drawing.Point(42, 128);
+            this.panel19.Location = new System.Drawing.Point(42, 141);
             this.panel19.Name = "panel19";
-            this.panel19.Size = new System.Drawing.Size(522, 40);
+            this.panel19.Size = new System.Drawing.Size(547, 40);
             this.panel19.TabIndex = 16;
             // 
             // label4
@@ -345,47 +354,112 @@
             // panel13
             // 
             this.panel13.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panel13.Controls.Add(this.SaveAsButton);
-            this.panel13.Controls.Add(this.FixAllButton);
-            this.panel13.Controls.Add(this.ResetButton);
+            this.panel13.Controls.Add(this.panel23);
+            this.panel13.Controls.Add(this.panel22);
+            this.panel13.Controls.Add(this.filePathLabel);
             this.panel13.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel13.Location = new System.Drawing.Point(42, 40);
             this.panel13.Name = "panel13";
-            this.panel13.Size = new System.Drawing.Size(522, 88);
+            this.panel13.Size = new System.Drawing.Size(547, 101);
             this.panel13.TabIndex = 13;
             // 
-            // SaveAsButton
+            // panel23
             // 
-            this.SaveAsButton.Location = new System.Drawing.Point(357, 14);
-            this.SaveAsButton.Name = "SaveAsButton";
-            this.SaveAsButton.Size = new System.Drawing.Size(138, 54);
-            this.SaveAsButton.TabIndex = 3;
-            this.SaveAsButton.Text = "  Save As";
-            this.SaveAsButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.SaveAsButton.UseVisualStyleBackColor = true;
-            this.SaveAsButton.Click += new System.EventHandler(this.SaveAsButton_Click);
+            this.panel23.Controls.Add(this.BackupBrowseButton);
+            this.panel23.Controls.Add(this.BackupPathTextBox);
+            this.panel23.Controls.Add(this.label9);
+            this.panel23.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel23.Location = new System.Drawing.Point(0, 53);
+            this.panel23.Name = "panel23";
+            this.panel23.Size = new System.Drawing.Size(545, 60);
+            this.panel23.TabIndex = 3;
             // 
-            // FixAllButton
+            // BackupBrowseButton
             // 
-            this.FixAllButton.Location = new System.Drawing.Point(21, 13);
-            this.FixAllButton.Name = "FixAllButton";
-            this.FixAllButton.Size = new System.Drawing.Size(138, 54);
-            this.FixAllButton.TabIndex = 0;
-            this.FixAllButton.Text = "  Fix All Error";
-            this.FixAllButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.FixAllButton.UseVisualStyleBackColor = true;
-            this.FixAllButton.Click += new System.EventHandler(this.FixAllButton_Click);
+            this.BackupBrowseButton.BackColor = System.Drawing.Color.White;
+            this.BackupBrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
+            this.BackupBrowseButton.Location = new System.Drawing.Point(478, 5);
+            this.BackupBrowseButton.Name = "BackupBrowseButton";
+            this.BackupBrowseButton.Padding = new System.Windows.Forms.Padding(3);
+            this.BackupBrowseButton.Size = new System.Drawing.Size(62, 34);
+            this.BackupBrowseButton.TabIndex = 2;
+            this.BackupBrowseButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.BackupBrowseButton.UseVisualStyleBackColor = false;
+            this.BackupBrowseButton.Click += new System.EventHandler(this.BackupBrowseButton_Click);
             // 
-            // ResetButton
+            // BackupPathTextBox
             // 
-            this.ResetButton.Location = new System.Drawing.Point(190, 13);
-            this.ResetButton.Name = "ResetButton";
-            this.ResetButton.Size = new System.Drawing.Size(138, 54);
-            this.ResetButton.TabIndex = 2;
-            this.ResetButton.Text = "  Reset";
-            this.ResetButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.ResetButton.UseVisualStyleBackColor = true;
-            this.ResetButton.Click += new System.EventHandler(this.ResetVariables);
+            this.BackupPathTextBox.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.BackupPathTextBox.Location = new System.Drawing.Point(110, 9);
+            this.BackupPathTextBox.Name = "BackupPathTextBox";
+            this.BackupPathTextBox.ReadOnly = true;
+            this.BackupPathTextBox.Size = new System.Drawing.Size(362, 26);
+            this.BackupPathTextBox.TabIndex = 2;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label9.Location = new System.Drawing.Point(5, 13);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(99, 16);
+            this.label9.TabIndex = 1;
+            this.label9.Text = "Backup Path";
+            // 
+            // panel22
+            // 
+            this.panel22.Controls.Add(this.FileBrowseButton);
+            this.panel22.Controls.Add(this.ConfigFilePathTextBox);
+            this.panel22.Controls.Add(this.label8);
+            this.panel22.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel22.Location = new System.Drawing.Point(0, 0);
+            this.panel22.Name = "panel22";
+            this.panel22.Size = new System.Drawing.Size(545, 53);
+            this.panel22.TabIndex = 2;
+            // 
+            // FileBrowseButton
+            // 
+            this.FileBrowseButton.BackColor = System.Drawing.Color.White;
+            this.FileBrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
+            this.FileBrowseButton.Location = new System.Drawing.Point(478, 7);
+            this.FileBrowseButton.Name = "FileBrowseButton";
+            this.FileBrowseButton.Padding = new System.Windows.Forms.Padding(3);
+            this.FileBrowseButton.Size = new System.Drawing.Size(62, 34);
+            this.FileBrowseButton.TabIndex = 0;
+            this.FileBrowseButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.FileBrowseButton.UseVisualStyleBackColor = false;
+            this.FileBrowseButton.Click += new System.EventHandler(this.BrowseButton_Click);
+            // 
+            // ConfigFilePathTextBox
+            // 
+            this.ConfigFilePathTextBox.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ConfigFilePathTextBox.Location = new System.Drawing.Point(110, 11);
+            this.ConfigFilePathTextBox.Name = "ConfigFilePathTextBox";
+            this.ConfigFilePathTextBox.ReadOnly = true;
+            this.ConfigFilePathTextBox.Size = new System.Drawing.Size(362, 26);
+            this.ConfigFilePathTextBox.TabIndex = 1;
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label8.Location = new System.Drawing.Point(5, 18);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(83, 16);
+            this.label8.TabIndex = 0;
+            this.label8.Text = "Config File";
+            // 
+            // filePathLabel
+            // 
+            this.filePathLabel.AutoSize = true;
+            this.filePathLabel.Font = new System.Drawing.Font("굴림", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.filePathLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
+            this.filePathLabel.Location = new System.Drawing.Point(5, 27);
+            this.filePathLabel.Name = "filePathLabel";
+            this.filePathLabel.Size = new System.Drawing.Size(44, 13);
+            this.filePathLabel.TabIndex = 1;
+            this.filePathLabel.Text = "label2";
+            this.filePathLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // panel16
             // 
@@ -394,7 +468,7 @@
             this.panel16.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel16.Location = new System.Drawing.Point(42, 0);
             this.panel16.Name = "panel16";
-            this.panel16.Size = new System.Drawing.Size(522, 40);
+            this.panel16.Size = new System.Drawing.Size(547, 40);
             this.panel16.TabIndex = 12;
             // 
             // label3
@@ -404,9 +478,9 @@
             this.label3.ForeColor = System.Drawing.Color.White;
             this.label3.Location = new System.Drawing.Point(6, 12);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(67, 16);
+            this.label3.Size = new System.Drawing.Size(35, 16);
             this.label3.TabIndex = 0;
-            this.label3.Text = "Control";
+            this.label3.Text = "File";
             // 
             // panel15
             // 
@@ -419,10 +493,43 @@
             // panel14
             // 
             this.panel14.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panel14.Location = new System.Drawing.Point(564, 0);
+            this.panel14.Location = new System.Drawing.Point(589, 0);
             this.panel14.Name = "panel14";
-            this.panel14.Size = new System.Drawing.Size(58, 781);
+            this.panel14.Size = new System.Drawing.Size(33, 781);
             this.panel14.TabIndex = 1;
+            // 
+            // SaveAsButton
+            // 
+            this.SaveAsButton.Location = new System.Drawing.Point(311, 12);
+            this.SaveAsButton.Name = "SaveAsButton";
+            this.SaveAsButton.Size = new System.Drawing.Size(127, 39);
+            this.SaveAsButton.TabIndex = 3;
+            this.SaveAsButton.Text = "  Save As";
+            this.SaveAsButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.SaveAsButton.UseVisualStyleBackColor = true;
+            this.SaveAsButton.Click += new System.EventHandler(this.SaveAsButton_Click);
+            // 
+            // FixAllButton
+            // 
+            this.FixAllButton.Location = new System.Drawing.Point(45, 12);
+            this.FixAllButton.Name = "FixAllButton";
+            this.FixAllButton.Size = new System.Drawing.Size(127, 39);
+            this.FixAllButton.TabIndex = 0;
+            this.FixAllButton.Text = "  Fix All Error";
+            this.FixAllButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.FixAllButton.UseVisualStyleBackColor = true;
+            this.FixAllButton.Click += new System.EventHandler(this.FixAllButton_Click);
+            // 
+            // ResetButton
+            // 
+            this.ResetButton.Location = new System.Drawing.Point(178, 12);
+            this.ResetButton.Name = "ResetButton";
+            this.ResetButton.Size = new System.Drawing.Size(127, 39);
+            this.ResetButton.TabIndex = 2;
+            this.ResetButton.Text = "  Reset";
+            this.ResetButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.ResetButton.UseVisualStyleBackColor = true;
+            this.ResetButton.Click += new System.EventHandler(this.ResetButton_Click);
             // 
             // ModeButton
             // 
@@ -430,7 +537,7 @@
             this.ModeButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.ModeButton.Location = new System.Drawing.Point(856, 0);
             this.ModeButton.Name = "ModeButton";
-            this.ModeButton.Size = new System.Drawing.Size(57, 41);
+            this.ModeButton.Size = new System.Drawing.Size(57, 51);
             this.ModeButton.TabIndex = 2;
             this.ModeButton.Text = " ";
             this.ModeButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -450,47 +557,22 @@
             // 
             this.panel5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
             this.panel5.Controls.Add(this.panel12);
-            this.panel5.Controls.Add(this.filePathLabel);
             this.panel5.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel5.Location = new System.Drawing.Point(622, 163);
             this.panel5.Name = "panel5";
-            this.panel5.Size = new System.Drawing.Size(915, 54);
+            this.panel5.Size = new System.Drawing.Size(915, 65);
             this.panel5.TabIndex = 8;
             // 
             // panel12
             // 
-            this.panel12.Controls.Add(this.BrowseButton);
+            this.panel12.Controls.Add(this.FixAllButton);
+            this.panel12.Controls.Add(this.SaveAsButton);
+            this.panel12.Controls.Add(this.ResetButton);
             this.panel12.Dock = System.Windows.Forms.DockStyle.Right;
-            this.panel12.Location = new System.Drawing.Point(798, 0);
+            this.panel12.Location = new System.Drawing.Point(471, 0);
             this.panel12.Name = "panel12";
-            this.panel12.Size = new System.Drawing.Size(117, 54);
+            this.panel12.Size = new System.Drawing.Size(444, 65);
             this.panel12.TabIndex = 2;
-            // 
-            // BrowseButton
-            // 
-            this.BrowseButton.BackColor = System.Drawing.Color.White;
-            this.BrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
-            this.BrowseButton.Location = new System.Drawing.Point(11, 5);
-            this.BrowseButton.Name = "BrowseButton";
-            this.BrowseButton.Padding = new System.Windows.Forms.Padding(3);
-            this.BrowseButton.Size = new System.Drawing.Size(100, 41);
-            this.BrowseButton.TabIndex = 0;
-            this.BrowseButton.Text = " Browse";
-            this.BrowseButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.BrowseButton.UseVisualStyleBackColor = false;
-            this.BrowseButton.Click += new System.EventHandler(this.BrowseButton_Click);
-            // 
-            // filePathLabel
-            // 
-            this.filePathLabel.AutoSize = true;
-            this.filePathLabel.Font = new System.Drawing.Font("굴림", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.filePathLabel.ForeColor = System.Drawing.SystemColors.ControlLightLight;
-            this.filePathLabel.Location = new System.Drawing.Point(6, 18);
-            this.filePathLabel.Name = "filePathLabel";
-            this.filePathLabel.Size = new System.Drawing.Size(44, 13);
-            this.filePathLabel.TabIndex = 1;
-            this.filePathLabel.Text = "label2";
-            this.filePathLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // panel7
             // 
@@ -499,10 +581,10 @@
             this.panel7.Controls.Add(this.ModeButton);
             this.panel7.Controls.Add(this.ExpandAllButton);
             this.panel7.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel7.Location = new System.Drawing.Point(622, 217);
+            this.panel7.Location = new System.Drawing.Point(622, 228);
             this.panel7.Margin = new System.Windows.Forms.Padding(5);
             this.panel7.Name = "panel7";
-            this.panel7.Size = new System.Drawing.Size(915, 43);
+            this.panel7.Size = new System.Drawing.Size(915, 53);
             this.panel7.TabIndex = 9;
             // 
             // panel17
@@ -512,7 +594,7 @@
             this.panel17.Dock = System.Windows.Forms.DockStyle.Right;
             this.panel17.Location = new System.Drawing.Point(726, 0);
             this.panel17.Name = "panel17";
-            this.panel17.Size = new System.Drawing.Size(130, 41);
+            this.panel17.Size = new System.Drawing.Size(130, 51);
             this.panel17.TabIndex = 3;
             // 
             // label2
@@ -520,7 +602,7 @@
             this.label2.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label2.Location = new System.Drawing.Point(13, 13);
+            this.label2.Location = new System.Drawing.Point(13, 18);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(85, 16);
             this.label2.TabIndex = 1;
@@ -530,7 +612,7 @@
             // 
             this.modeLabel.AutoSize = true;
             this.modeLabel.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.modeLabel.Location = new System.Drawing.Point(97, 13);
+            this.modeLabel.Location = new System.Drawing.Point(98, 18);
             this.modeLabel.Name = "modeLabel";
             this.modeLabel.Size = new System.Drawing.Size(29, 16);
             this.modeLabel.TabIndex = 1;
@@ -542,7 +624,7 @@
             this.ExpandAllButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.ExpandAllButton.Location = new System.Drawing.Point(0, 0);
             this.ExpandAllButton.Name = "ExpandAllButton";
-            this.ExpandAllButton.Size = new System.Drawing.Size(45, 41);
+            this.ExpandAllButton.Size = new System.Drawing.Size(45, 51);
             this.ExpandAllButton.TabIndex = 0;
             this.ExpandAllButton.UseVisualStyleBackColor = true;
             this.ExpandAllButton.Click += new System.EventHandler(this.ExpandAllButton_Click);
@@ -551,9 +633,9 @@
             // 
             this.panel11.Controls.Add(this.VariableDataTreeListView);
             this.panel11.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel11.Location = new System.Drawing.Point(622, 260);
+            this.panel11.Location = new System.Drawing.Point(622, 281);
             this.panel11.Name = "panel11";
-            this.panel11.Size = new System.Drawing.Size(915, 684);
+            this.panel11.Size = new System.Drawing.Size(915, 663);
             this.panel11.TabIndex = 10;
             // 
             // VariableDataTreeListView
@@ -569,7 +651,7 @@
             this.VariableDataTreeListView.Name = "VariableDataTreeListView";
             this.VariableDataTreeListView.RootKeyValueString = "";
             this.VariableDataTreeListView.ShowGroups = false;
-            this.VariableDataTreeListView.Size = new System.Drawing.Size(915, 684);
+            this.VariableDataTreeListView.Size = new System.Drawing.Size(915, 663);
             this.VariableDataTreeListView.TabIndex = 0;
             this.VariableDataTreeListView.UseCompatibleStateImageBehavior = false;
             this.VariableDataTreeListView.View = System.Windows.Forms.View.Details;
@@ -612,10 +694,14 @@
             this.panel19.ResumeLayout(false);
             this.panel19.PerformLayout();
             this.panel13.ResumeLayout(false);
+            this.panel13.PerformLayout();
+            this.panel23.ResumeLayout(false);
+            this.panel23.PerformLayout();
+            this.panel22.ResumeLayout(false);
+            this.panel22.PerformLayout();
             this.panel16.ResumeLayout(false);
             this.panel16.PerformLayout();
             this.panel5.ResumeLayout(false);
-            this.panel5.PerformLayout();
             this.panel12.ResumeLayout(false);
             this.panel7.ResumeLayout(false);
             this.panel17.ResumeLayout(false);
@@ -649,7 +735,7 @@
         private BrightIdeasSoftware.DataTreeListView VariableDataTreeListView;
         private System.Windows.Forms.Label filePathLabel;
         private System.Windows.Forms.Panel panel12;
-        private System.Windows.Forms.Button BrowseButton;
+        private System.Windows.Forms.Button FileBrowseButton;
         private BrightIdeasSoftware.ColumnButtonRenderer columnButtonRenderer3;
         private System.Windows.Forms.Panel panel15;
         private System.Windows.Forms.Panel panel14;
@@ -673,6 +759,13 @@
         private System.Windows.Forms.Panel panel18;
         private System.Windows.Forms.ListBox LogListBox;
         private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Panel panel23;
+        private System.Windows.Forms.Panel panel22;
+        private System.Windows.Forms.TextBox BackupPathTextBox;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.TextBox ConfigFilePathTextBox;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.Button BackupBrowseButton;
     }
 }
 

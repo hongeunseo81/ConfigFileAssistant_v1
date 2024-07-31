@@ -3,6 +3,7 @@ using CalibrationTool;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -13,7 +14,7 @@ namespace ConfigFileAssistant_v1
     public partial class MainForm  : Form
     {
         private Config Conf = new Config();
-        private string BackupFileDirectory = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/";
+        private string BackupFilePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/";
         private string FilePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
         private List<VariableInfo> InitYmlVariables;
 
@@ -39,7 +40,7 @@ namespace ConfigFileAssistant_v1
         
         private Image FixImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/fix.png");
         private Image BrowseImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/folder-open.png");
-        private Image CompareImageButon = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/refresh.png");
+        private Image ResetImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/refresh.png");
         private Image SaveAsImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/save-as.png");
         
         private Image LogoImage = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/letter-c.png");
@@ -67,6 +68,7 @@ namespace ConfigFileAssistant_v1
             Created,
             Deleted,
             Updated,
+            Skipped,
             Failed
         }
         // Set Up
@@ -102,7 +104,7 @@ namespace ConfigFileAssistant_v1
             ButtonImageList.Images.Add("browse", BrowseImageButton);
             ButtonImageList.Images.Add("fix", FixImageButton);
             ButtonImageList.Images.Add("save-as", SaveAsImageButton);
-            ButtonImageList.Images.Add("compare", CompareImageButon);
+            ButtonImageList.Images.Add("reset", ResetImageButton);
             ToolTip = new ToolTip();
             ModeButton.ImageList = ButtonImageList;
 
@@ -111,8 +113,10 @@ namespace ConfigFileAssistant_v1
             ToolTip.SetToolTip(ModeButton, "Current View: Read-Only, Click to Edit");
             RemoveButtonBorder(ModeButton);
 
-            BrowseButton.Image = ButtonImageList.Images[0];
-            ToolTip.SetToolTip(BrowseButton, "Browse other files");
+            FileBrowseButton.Image = ButtonImageList.Images[0];
+            ToolTip.SetToolTip(FileBrowseButton, "Browse other config files");
+            BackupBrowseButton.Image = ButtonImageList.Images[0];
+            ToolTip.SetToolTip(BackupBrowseButton, "Change backup file path");
 
             FixAllButton.Image = ButtonImageList.Images[1];
             ToolTip.SetToolTip(FixAllButton, "Fix All Errors");
@@ -121,7 +125,7 @@ namespace ConfigFileAssistant_v1
             ToolTip.SetToolTip(SaveAsButton, "Save As");
 
             ResetButton.Image = ButtonImageList.Images[3];
-            ToolTip.SetToolTip(ResetButton, "Compare to Code");
+            ToolTip.SetToolTip(ResetButton, "reset");
         }
         private void RemoveButtonBorder(Button button)
         {
@@ -132,15 +136,19 @@ namespace ConfigFileAssistant_v1
         private void SetupMenuItems()
         {
             ContextMenuStrip = new ContextMenuStrip();
+            var addChildMenuItem = new ToolStripMenuItem("Add Child");
             var addRowMenuItem = new ToolStripMenuItem("Add Row");
             var deleteRowMenuItem = new ToolStripMenuItem("Delete Row");
-            ContextMenuStrip.Items.AddRange(new ToolStripItem[] { addRowMenuItem, deleteRowMenuItem });
+            ContextMenuStrip.Items.AddRange(new ToolStripItem[] { addChildMenuItem,addRowMenuItem, deleteRowMenuItem });
+            addChildMenuItem.Click += AddChildMenuItem_Click;
             addRowMenuItem.Click += AddRowMenuItem_Click;
             deleteRowMenuItem.Click += DeleteRowMenuItem_Click;
         }
+       
         private void SetupData()
         {
-            filePathLabel.Text = FilePath;
+            BackupPathTextBox.Text = BackupFilePath;
+            ConfigFilePathTextBox.Text = FilePath;
             ConfigValidator.LoadYamlFile(FilePath);
             CsVariables = ConfigValidator.ExtractCsVariables();
             YmlVariables = ConfigValidator.ExtractYmlVariables();
@@ -235,6 +243,10 @@ namespace ConfigFileAssistant_v1
             {
                 e.Item.BackColor = Color.Gold;
             }
+            else if(variableInfo.Result == Result.NoChild)
+            {
+                e.Item.BackColor = Color.Silver;
+            }
         }
         private void SetEditable(bool isEditable)
         {
@@ -271,34 +283,98 @@ namespace ConfigFileAssistant_v1
         }
         private void VariableDataTreeListView_CellRightClick(object sender, CellRightClickEventArgs e)
         {
-            ContextMenuStrip.Tag = e.RowIndex;
-            var screenPosition = VariableDataTreeListView.PointToScreen(e.Location);
+            var selectedObject = VariableDataTreeListView.GetModelObject(e.RowIndex) as VariableInfo;
+            bool isGenericType = selectedObject.Type.IsGenericType;
 
+            foreach (ToolStripItem item in ContextMenuStrip.Items)
+            {
+                if (item is ToolStripMenuItem menuItem && menuItem.Text == "Add Child")
+                {
+                    menuItem.Visible = isGenericType;
+                    break;
+                }
+            }
+            var screenPosition = VariableDataTreeListView.PointToScreen(e.Location);
             ContextMenuStrip.Show(screenPosition);
 
             e.Handled = true;
-
         }
        
         // Browse files
         private void BrowseButton_Click(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "YAML files (*.yml)|*.yml";
-            openFileDialog.Title = "Select a Config file";
-
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            using(OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                string selectedFilePath = openFileDialog.FileName;
-                FilePath = selectedFilePath;
-                ConfigValidator.ClearAllData();
-                ConfigValidator.Init();
-                SetupData();
-                AddVariablesToDataGridView(ResultVariables, VariableDataTreeListView);
+                openFileDialog.Filter = "YAML files (*.yml)|*.yml";
+                openFileDialog.Title = "Select a Config file";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    FilePath = openFileDialog.FileName;
+                    ConfigValidator.ClearAllData();
+                    ConfigValidator.Init();
+                    SetupData();
+                    AddVariablesToDataGridView(ResultVariables, VariableDataTreeListView);
+                }
             }
         }
+        private void BackupBrowseButton_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            {
+                folderBrowserDialog.Description = "Select a folder to back up your data.";
+                folderBrowserDialog.ShowNewFolderButton = true;
 
+                DialogResult result = folderBrowserDialog.ShowDialog();
+
+                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
+                {
+                    BackupFilePath = folderBrowserDialog.SelectedPath;
+                }
+            }
+        }
         // Edit cells
+        private void AddChildMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedObject = VariableDataTreeListView.SelectedObject as VariableInfo;
+            string path = "";
+            if (selectedObject != null)
+            {
+                string fullName = selectedObject.FullName;
+                int lastIndex = fullName.LastIndexOf('.');
+                if (lastIndex != -1)
+                {
+                    path = fullName;
+                }
+
+                using (ObjectCreater objectCreater = new ObjectCreater(path))
+                {
+                    if (objectCreater.ShowDialog() == DialogResult.OK)
+                    {
+                        List<VariableInfo> newObjects = objectCreater.CreatedVariables;
+                        for (int i = newObjects.Count - 1; i >= 0; --i)
+                        {
+                            Status status = Status.Created;
+                            var success = ConfigValidator.InsertChildToVariable(selectedObject,newObjects[i]);
+                            if (!success)
+                            {
+                                MessageBox.Show("Adding row failed.");
+                                status = Status.Failed;
+                            }
+                            else
+                            {
+                                selectedObject.Result = selectedObject.Result == Result.NoChild ? Result.Ok : selectedObject.Result;
+                                VariableDataTreeListView.SetObjects(YmlVariables);
+                                VariableDataTreeListView.SelectedObject = newObjects[i];
+                            }
+                            MakeCurrentLog(newObjects[i].FullName, newObjects[i].Value.ToString(), "", status);
+                        }
+                        VariableDataTreeListView.SelectedIndex = selectedObject.Children.Count + newObjects.Count;
+                        RefreshResult();
+                    }
+                }
+            }
+        }
         private void AddRowMenuItem_Click(object sender, EventArgs e)
         {
             var selectedObject = VariableDataTreeListView.SelectedObject as VariableInfo;
@@ -312,7 +388,6 @@ namespace ConfigFileAssistant_v1
                 {
                     path = fullName.Substring(0, lastIndex);
                 }
-
             }
             using (ObjectCreater objectCreater = new ObjectCreater(path))
             {
@@ -322,7 +397,7 @@ namespace ConfigFileAssistant_v1
                     for (int i = newObjects.Count - 1; i >= 0; --i)
                     {
                         Status status = Status.Created;
-                        var success = ConfigValidator.InsertChildToParent(selectedObject, newObjects[i]);
+                        var success = ConfigValidator.InsertVariable(selectedObject, newObjects[i]);
                         if (!success)
                         {
                             MessageBox.Show("Adding row failed.");
@@ -339,8 +414,6 @@ namespace ConfigFileAssistant_v1
                     RefreshResult();
                 }
             }
-            
-
         }
         private void DeleteRowMenuItem_Click(object sender, EventArgs e)
         {
@@ -348,7 +421,7 @@ namespace ConfigFileAssistant_v1
             if (selectedObject != null)
             {
                 Status status = Status.Deleted;
-                if (!ConfigValidator.RemoveChildFromVariable(selectedObject))
+                if (!ConfigValidator.RemoveVariable(selectedObject))
                 {
                     MessageBox.Show("Row deletion failed.");
                     status = Status.Failed;
@@ -367,7 +440,7 @@ namespace ConfigFileAssistant_v1
                 return;
 
             var variableInfo = (VariableInfo)e.Model;
-            if (variableInfo.Result != Result.Ok  && e.ColumnIndex == 0)
+            if (variableInfo.Result != Result.Ok && variableInfo.Result != Result.NoChild)
             {
                 Cursor = Cursors.Hand;
             }
@@ -383,10 +456,10 @@ namespace ConfigFileAssistant_v1
 
             var variableInfo = (VariableInfo)e.Model;
             var oldValue = variableInfo.Value;
-            if (variableInfo.Result != Result.Ok && e.ColumnIndex == 0)
+            if (variableInfo.Result != Result.Ok && variableInfo.Result != Result.NoChild)
             {
                 Status status = FixError(variableInfo);
-                if (status != Status.Failed)
+                if (status != Status.Failed && status != Status.Skipped)
                 {
                     ConfigValidator.RemoveVariableFromErrorList(variableInfo.FullName);
                     variableInfo.Result = Result.Ok;
@@ -452,13 +525,13 @@ namespace ConfigFileAssistant_v1
             switch (variableInfo.Result)
             {
                 case Result.OnlyInCs:
-                    if(ConfigValidator.AddChildToVariable(variableInfo))
+                    if(ConfigValidator.AddVariable(variableInfo))
                     {
                         status = Status.Created;
                     }
                     break;
                 case Result.OnlyInYml:
-                    if (ConfigValidator.RemoveChildFromVariable(variableInfo))
+                    if (ConfigValidator.RemoveVariable(variableInfo))
                     {
                         VariableDataTreeListView.RemoveObject(variableInfo);
                         status = Status.Deleted;
@@ -474,6 +547,9 @@ namespace ConfigFileAssistant_v1
                     {
                         status = Status.Updated;
                     }
+                    break;
+                case Result.NoChild:
+                    status = Status.Skipped;
                     break;
                 default:
                     break;
@@ -517,14 +593,20 @@ namespace ConfigFileAssistant_v1
         }
 
         // Control Buttons
-        private void ResetVariables(object sender, EventArgs e)
+        private void ResetButton_Click(object sender, EventArgs e)
         {
-            LogListBox.Items.Clear();
-            YmlVariables.Clear();
-            YmlVariables = ConfigValidator.ExtractYmlVariables();
-            var compareResult = ConfigValidator.CompareVariables(CsVariables, YmlVariables);
-            AddVariablesToDataGridView(compareResult, VariableDataTreeListView);
-            SetResultPicture();
+            var result = MessageBox.Show("Do you really want to reset?");
+            if(result == DialogResult.OK)
+            {
+                LogListBox.Items.Clear();
+                YmlVariables.Clear();
+                ConfigValidator.ClearAllData();
+                YmlVariables = ConfigValidator.ExtractYmlVariables();
+                var compareResult = ConfigValidator.CompareVariables(CsVariables, YmlVariables);
+                AddVariablesToDataGridView(compareResult, VariableDataTreeListView);
+                SetResultPicture();
+            }
+            
         }  
         private void SaveAsButton_Click(object sender, EventArgs e)
         {
@@ -550,12 +632,16 @@ namespace ConfigFileAssistant_v1
                 List<string> fixedErrorsList = new List<string>();
                 foreach (var key in errors.Keys)
                 {
-                    if (FixError(errors[key]) == Status.Failed)
+                    var status = FixError(errors[key]);
+                    if (status == Status.Failed)
                     {
                         MessageBox.Show("A problem occurred while fixing the error.");
                         return;
                     }
-                    fixedErrorsList.Add(key);
+                    else if(status != Status.Skipped)
+                    {
+                        fixedErrorsList.Add(key);
+                    }
                 }
 
                 foreach (var fixedError in fixedErrorsList)
@@ -606,7 +692,7 @@ namespace ConfigFileAssistant_v1
                     {
                         if (dialog.BackupChecked)
                         {
-                            ConfigValidator.MakeBackup(BackupFileDirectory, FilePath);
+                            ConfigValidator.MakeBackup(BackupFilePath, FilePath);
                         }
 
                         // Yaml 파일 생성
@@ -636,6 +722,10 @@ namespace ConfigFileAssistant_v1
                 newValue = newValue == string.Empty ? "Default Value" : newValue;
                 logMessage.Append($"{status} {oldValue} -> {newValue}");
             }
+            else if(status == Status.Skipped)
+            {
+                logMessage.Append($"{status}, You should add child.");
+            }
             else
             {
                 logMessage.Append($"{status}");
@@ -644,6 +734,8 @@ namespace ConfigFileAssistant_v1
             LogListBox.SelectedIndex = LogListBox.Items.Count - 1;
 
         }
+
+       
     }
     public class MultiImageRenderer : BaseRenderer
     {

@@ -23,7 +23,6 @@ namespace ConfigFileAssistant_v1
             InitializeComponent();
         }
 
-
         private void ObjectCreater_Load(object sender, EventArgs e)
         {
             if(dataGridView != null)
@@ -55,12 +54,6 @@ namespace ConfigFileAssistant_v1
                 dataGridView.Columns.Add(nameColumn);
                 dataGridView.Columns.Add(typeColumn);
                 dataGridView.Columns.Add(valueColumn);
-
-
-                dataGridView.ColumnHeadersDefaultCellStyle.BackColor = System.Drawing.Color.Yellow;
-                dataGridView.ColumnHeadersDefaultCellStyle.ForeColor = System.Drawing.Color.Black;
-                dataGridView.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("굴림", 15, System.Drawing.FontStyle.Bold);
-
             }
         }
 
@@ -68,12 +61,15 @@ namespace ConfigFileAssistant_v1
         {
             foreach (DataGridViewRow row in dataGridView.Rows)
             {
-                if (row.Cells["Name"].Value != null && row.Cells["Type"].Value != null && row.Cells["Value"].Value != null)
+                if (row.Cells["Name"].Value != null && row.Cells["Type"].Value != null)
                 {
-                    var variableInfo = new VariableInfo(variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(), row.Cells["Value"].Value.ToString());
+                    var value = row.Cells["Value"].Value == null ? string.Empty : row.Cells["Value"].Value.ToString();
+                    var variableInfo = new VariableInfo(variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(),value);
+                    TypeHandler.ConvertTypeNameToType(variableInfo);
                     CreatedVariables.Add(variableInfo);
                     this.DialogResult = DialogResult.OK;
                     this.Close();
+
                 }
             }
 

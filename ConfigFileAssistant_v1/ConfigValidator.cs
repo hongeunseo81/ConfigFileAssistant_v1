@@ -78,7 +78,8 @@ namespace ConfigFileAssistant_v1
         Ok,
         OnlyInCs,
         OnlyInYml,
-        WrongValue
+        WrongValue,
+        NoChild
     }
 
     public class ConfigValidator
@@ -92,6 +93,7 @@ namespace ConfigFileAssistant_v1
 
         public static void Init()
         {
+            TypeHandler.init();
             Instance = Activator.CreateInstance(typeof(Config));
             CsVariables = new List<VariableInfo>();
             Yaml = new YamlStream();
@@ -101,7 +103,7 @@ namespace ConfigFileAssistant_v1
             ErrorVariables = null;
             CsVariables = null;
             YmlVariables = null;
-            TypeHandler.ClearAllData();
+            Init();
         }
         public static void LoadYamlFile(string filePath)
         {
@@ -321,7 +323,6 @@ namespace ConfigFileAssistant_v1
         private static void CompareChild(VariableInfo csVariable, VariableInfo ymlVariable, VariableInfo csParentVariable)
         {
             Result result = ymlVariable.Result;
-            SetDefaultType(ymlVariable, csVariable);
 
             // 둘다 자식이 있는 경우
             if (csVariable.HasChildren() && ymlVariable.HasChildren())
@@ -335,6 +336,7 @@ namespace ConfigFileAssistant_v1
                 }
                 else
                 {
+                    SetDefaultType(ymlVariable, csVariable);
                     result = Result.WrongValue;
                 }
             }
@@ -355,6 +357,10 @@ namespace ConfigFileAssistant_v1
                     }
                 }
                 
+            }
+            else if(csVariable.HasChildren() && !ymlVariable.HasChildren())
+            {
+                result = Result.NoChild;
             }
             else
             {
@@ -454,9 +460,31 @@ namespace ConfigFileAssistant_v1
             return parent == null ? YmlVariables : parent.Children;
             
         }
-        public static bool InsertChildToParent(VariableInfo variable, VariableInfo newVariable)
+        public static bool InsertChildToVariable(VariableInfo variable, VariableInfo child)
         {
-            if(variable == null)
+            var parentVariables = GetParentVariables(variable.FullName);
+            var target = parentVariables.Find(v => v.Name == variable.Name);
+            if(target == null)
+            {
+                return false;
+            }
+
+            Dictionary<string, VariableInfo> parentVariableDict = target.Children.ToDictionary(v => v.Name);
+            if (target.Type == typeof(List<>))
+            {
+                child.Name = $"[{target.Children.Count}]";
+            }
+            if(parentVariableDict.ContainsKey(child.Name))
+            {
+                return false;
+            }
+            child.FullName = $"{variable.FullName}.{child.Name}";
+            target.Children.Add(child); 
+            return true;
+        }
+        public static bool InsertVariable(VariableInfo variable, VariableInfo newVariable)
+        {
+            if (variable == null)
             {
                 Dictionary<string, VariableInfo> csVariablesDict = CsVariables.ToDictionary(v => v.Name);
                 if(csVariablesDict.ContainsKey(newVariable.Name))
@@ -486,7 +514,7 @@ namespace ConfigFileAssistant_v1
                 return true;
             }
         }
-        public static bool AddChildToVariable(VariableInfo variableInfo)
+        public static bool AddVariable(VariableInfo variableInfo)
         {
             var parentVariables = GetParentVariables(variableInfo.FullName);
             var target = parentVariables.Find(v => v.Name == variableInfo.Name);
@@ -497,7 +525,7 @@ namespace ConfigFileAssistant_v1
             }
             return false;
         }
-        public static bool RemoveChildFromVariable(VariableInfo variableInfo)
+        public static bool RemoveVariable(VariableInfo variableInfo)
         {
             var parentVariables = GetParentVariables(variableInfo.FullName);
             
@@ -556,7 +584,6 @@ namespace ConfigFileAssistant_v1
 
             return resultMessage;
         }
-
         public static void MakeYamlFile(string filePath)
         {
             YamlStream yaml = new YamlStream();

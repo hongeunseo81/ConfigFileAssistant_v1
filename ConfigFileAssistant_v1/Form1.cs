@@ -1,5 +1,6 @@
 ﻿using BrightIdeasSoftware;
 using CalibrationTool;
+using ConfigFileAssistant_v1.Manager;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -8,44 +9,20 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using YamlDotNet.RepresentationModel;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 namespace ConfigFileAssistant_v1
 {
-    public partial class MainForm  : Form
+    public partial class MainForm : Form
     {
-        private Config Conf = new Config();
-        private string BackupFilePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/";
-        private string FilePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/config.yml";
-        private List<VariableInfo> InitYmlVariables;
+        private string BasePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug";
+        private  FileManager _fileManager;
+        private  ImageManager _imageManager;
 
+        private List<VariableInfo> InitYmlVariables;
         private List<VariableInfo> CsVariables;
         private List<VariableInfo> YmlVariables;
         private List<VariableInfo> ResultVariables;
-
-        private ImageList CommandImageList;
-        private ImageList ExpandImageList;
-        private ImageList EditModeImageList;
-        private ImageList ButtonImageList;
-        private ImageList ResultImageList;
-
-        private Image ExpandImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/down.png");
-        private Image CollapseImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/up.png");
-       
-        private Image PlusImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/plus_color.png");
-        private Image MinusImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/minus_color.png");
-        private Image CautionImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/caution.png");
-        
-        private Image EditImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/edit-on.png");
-        private Image ReadImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/edit-off.png");
-        
-        private Image FixImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/fix.png");
-        private Image BrowseImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/folder-open.png");
-        private Image ResetImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/refresh.png");
-        private Image SaveAsImageButton = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/save-as.png");
-        
-        private Image LogoImage = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/letter-c.png");
-        private Image ResultFailImage = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/failed.png");
-        private Image ResultSuccessImage = Image.FromFile("C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug/icon/success.png");
 
         private bool IsExpanded = true;
         private bool IsEditMode = false;
@@ -55,14 +32,6 @@ namespace ConfigFileAssistant_v1
         private Dictionary<string, object[]> EditedVariables = new Dictionary<string, object[]>();
 
 
-        public MainForm()
-        {
-            InitializeComponent();
-            SetupButtonImages();
-            SetupMenuItems();
-            SetupData();
-        }
-
         public enum Status
         {
             Created,
@@ -71,67 +40,43 @@ namespace ConfigFileAssistant_v1
             Skipped,
             Failed
         }
+        public MainForm()
+        {
+            InitializeComponent();
+            Init();
+            SetupButtonImages();
+            SetupMenuItems();
+            SetupData();
+        }
+        private void Init()
+        {
+            _fileManager = new FileManager(BasePath, FilePathTextBox, BackupPathTextBox);
+            _imageManager = new ImageManager(BasePath);
+            this.Icon = _imageManager.LogoIcon;
+            LogoPictureBox.Image = _imageManager.LogoImage;
+        }
         // Set Up
         private void SetupButtonImages()
         {
-            ResultImageList = new ImageList();
-            ResultImageList.ImageSize = new Size(200, 200);
-            ResultImageList.Images.Add(ResultSuccessImage);
-            ResultImageList.Images.Add(ResultFailImage);
-
-            ExpandImageList = new ImageList();
-            ExpandImageList.ImageSize = new Size(32, 32);
-            ExpandImageList.Images.Add("collapse", CollapseImageButton);
-            ExpandImageList.Images.Add("expand", ExpandImageButton);
-            ExpandAllButton.ImageList = ExpandImageList;
-            ExpandAllButton.Image = ExpandImageList.Images[0];
-            RemoveButtonBorder(ExpandAllButton);
-
-            EditModeImageList = new ImageList();
-            EditModeImageList.ImageSize = new Size(32, 32);
-            EditModeImageList.Images.Add("edit-off", ReadImageButton);
-            EditModeImageList.Images.Add("edit-on", EditImageButton);
-            ModeButton.ImageList = EditModeImageList;
-
-            CommandImageList = new ImageList();
-            CommandImageList.ImageSize = new Size(16, 16);
-            CommandImageList.Images.Add("plus", PlusImageButton);
-            CommandImageList.Images.Add("minus", MinusImageButton);
-            CommandImageList.Images.Add("caution", CautionImageButton);
-
-            ButtonImageList = new ImageList();
-            ButtonImageList.ImageSize = new Size(25, 25);
-            ButtonImageList.Images.Add("browse", BrowseImageButton);
-            ButtonImageList.Images.Add("fix", FixImageButton);
-            ButtonImageList.Images.Add("save-as", SaveAsImageButton);
-            ButtonImageList.Images.Add("reset", ResetImageButton);
             ToolTip = new ToolTip();
-            ModeButton.ImageList = ButtonImageList;
-
-
-            ModeButton.Image = EditModeImageList.Images[0];
+            _imageManager.SetButtonImage(ExpandAllButton, "expand", _imageManager.ExpandImageList,false);
+            _imageManager.SetButtonImage(ModeButton, "edit-off", _imageManager.EditModeImageList, false);
             ToolTip.SetToolTip(ModeButton, "Current View: Read-Only, Click to Edit");
-            RemoveButtonBorder(ModeButton);
 
-            FileBrowseButton.Image = ButtonImageList.Images[0];
+            _imageManager.SetButtonImage(FileBrowseButton, "browse", _imageManager.ButtonImageList, false);
             ToolTip.SetToolTip(FileBrowseButton, "Browse other config files");
-            BackupBrowseButton.Image = ButtonImageList.Images[0];
+
+            _imageManager.SetButtonImage(BackupBrowseButton, "browse", _imageManager.ButtonImageList, false);
             ToolTip.SetToolTip(BackupBrowseButton, "Change backup file path");
 
-            FixAllButton.Image = ButtonImageList.Images[1];
+            _imageManager.SetButtonImage(FixAllButton, "fix", _imageManager.ButtonImageList);
             ToolTip.SetToolTip(FixAllButton, "Fix All Errors");
 
-            SaveAsButton.Image = ButtonImageList.Images[2];
+            _imageManager.SetButtonImage(SaveAsButton, "save-as", _imageManager.ButtonImageList);
             ToolTip.SetToolTip(SaveAsButton, "Save As");
 
-            ResetButton.Image = ButtonImageList.Images[3];
-            ToolTip.SetToolTip(ResetButton, "reset");
-        }
-        private void RemoveButtonBorder(Button button)
-        {
-            button.FlatStyle = FlatStyle.Flat;
-            button.FlatAppearance.BorderColor = Color.FromArgb(0, 255, 255, 255);
-            button.FlatAppearance.BorderSize = 0;
+            _imageManager.SetButtonImage(ResetButton, "reset", _imageManager.ButtonImageList);
+            ToolTip.SetToolTip(ResetButton, "Reset");
         }
         private void SetupMenuItems()
         {
@@ -139,17 +84,15 @@ namespace ConfigFileAssistant_v1
             var addChildMenuItem = new ToolStripMenuItem("Add Child");
             var addRowMenuItem = new ToolStripMenuItem("Add Row");
             var deleteRowMenuItem = new ToolStripMenuItem("Delete Row");
-            ContextMenuStrip.Items.AddRange(new ToolStripItem[] { addChildMenuItem,addRowMenuItem, deleteRowMenuItem });
+            ContextMenuStrip.Items.AddRange(new ToolStripItem[] { addChildMenuItem, addRowMenuItem, deleteRowMenuItem });
             addChildMenuItem.Click += AddChildMenuItem_Click;
             addRowMenuItem.Click += AddRowMenuItem_Click;
             deleteRowMenuItem.Click += DeleteRowMenuItem_Click;
         }
-       
+
         private void SetupData()
         {
-            BackupPathTextBox.Text = BackupFilePath;
-            ConfigFilePathTextBox.Text = FilePath;
-            ConfigValidator.LoadYamlFile(FilePath);
+            ConfigValidator.LoadYamlFile(_fileManager.FilePath);
             CsVariables = ConfigValidator.ExtractCsVariables();
             YmlVariables = ConfigValidator.ExtractYmlVariables();
             ResultVariables = ConfigValidator.CompareVariables(CsVariables, YmlVariables);
@@ -160,13 +103,12 @@ namespace ConfigFileAssistant_v1
         // Form Load
         private void Form1_Load(object sender, EventArgs e)
         {
-            logoPictureBox.Image = LogoImage;
             VariableDataTreeListView.CellEditStarting += DataTreeListView_CellEditStarting;
             VariableDataTreeListView.CellEditFinishing += DataTreeListView_CellEditFinishing;
         }
         private void AddVariablesToDataGridView(List<VariableInfo> variables, DataTreeListView objectListView)
         {
-            objectListView.SmallImageList = CommandImageList;
+            objectListView.SmallImageList = _imageManager.CommandImageList;
             objectListView.SetObjects(variables);
             objectListView.CanExpandGetter = x => ((VariableInfo)x).HasChildren();
             objectListView.ChildrenGetter = x => ((VariableInfo)x).Children;
@@ -243,7 +185,7 @@ namespace ConfigFileAssistant_v1
             {
                 e.Item.BackColor = Color.Gold;
             }
-            else if(variableInfo.Result == Result.NoChild)
+            else if (variableInfo.Result == Result.NoChild)
             {
                 e.Item.BackColor = Color.Silver;
             }
@@ -262,7 +204,7 @@ namespace ConfigFileAssistant_v1
                 }
             }
 
-            if (isEditable) 
+            if (isEditable)
             {
                 VariableDataTreeListView.CellEditActivation = ObjectListView.CellEditActivateMode.SingleClick;
                 VariableDataTreeListView.BackColor = System.Drawing.ColorTranslator.FromHtml("#CFCFEB");
@@ -299,22 +241,21 @@ namespace ConfigFileAssistant_v1
 
             e.Handled = true;
         }
-       
+
         // Browse files
         private void BrowseButton_Click(object sender, EventArgs e)
         {
-            using(OpenFileDialog openFileDialog = new OpenFileDialog())
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
                 openFileDialog.Filter = "YAML files (*.yml)|*.yml";
                 openFileDialog.Title = "Select a Config file";
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    FilePath = openFileDialog.FileName;
+                    _fileManager.SetFilePath(openFileDialog.FileName, FilePathTextBox);
                     ConfigValidator.ClearAllData();
                     ConfigValidator.Init();
                     SetupData();
-                    AddVariablesToDataGridView(ResultVariables, VariableDataTreeListView);
                 }
             }
         }
@@ -329,10 +270,11 @@ namespace ConfigFileAssistant_v1
 
                 if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
                 {
-                    BackupFilePath = folderBrowserDialog.SelectedPath;
+                    _fileManager.SetBackupPath(folderBrowserDialog.SelectedPath, BackupPathTextBox);
                 }
             }
         }
+
         // Edit cells
         private void AddChildMenuItem_Click(object sender, EventArgs e)
         {
@@ -355,7 +297,7 @@ namespace ConfigFileAssistant_v1
                         for (int i = newObjects.Count - 1; i >= 0; --i)
                         {
                             Status status = Status.Created;
-                            var success = ConfigValidator.InsertChildToVariable(selectedObject,newObjects[i]);
+                            var success = ConfigValidator.InsertChildToVariable(selectedObject, newObjects[i]);
                             if (!success)
                             {
                                 MessageBox.Show("Adding row failed.");
@@ -431,7 +373,7 @@ namespace ConfigFileAssistant_v1
                     VariableDataTreeListView.SetObjects(YmlVariables);
                     RefreshResult();
                 }
-                MakeCurrentLog(selectedObject.FullName,"", "", status);
+                MakeCurrentLog(selectedObject.FullName, "", "", status);
             }
         }
         private void DataTreeListView_CellOver(object sender, CellOverEventArgs e)
@@ -467,7 +409,7 @@ namespace ConfigFileAssistant_v1
                 }
             }
         }
-        private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)  
+        private void DataTreeListView_CellEditStarting(object sender, CellEditEventArgs e)
         {
             VariableInfo variableInfo = (VariableInfo)e.RowObject;
 
@@ -478,7 +420,7 @@ namespace ConfigFileAssistant_v1
                 e.Control.Width = e.CellBounds.Width;
                 e.Control.Height = e.CellBounds.Height;
 
-               if(variableInfo.Type == typeof(bool))
+                if (variableInfo.Type == typeof(bool))
                 {
                     CheckBox cb = new CheckBox();
                     cb.Bounds = e.CellBounds;
@@ -516,7 +458,7 @@ namespace ConfigFileAssistant_v1
                 }
             }
         }
-       
+
         // Fix Error
         private Status FixError(VariableInfo variableInfo)
         {
@@ -525,7 +467,7 @@ namespace ConfigFileAssistant_v1
             switch (variableInfo.Result)
             {
                 case Result.OnlyInCs:
-                    if(ConfigValidator.AddVariable(variableInfo))
+                    if (ConfigValidator.AddVariable(variableInfo))
                     {
                         status = Status.Created;
                     }
@@ -543,7 +485,7 @@ namespace ConfigFileAssistant_v1
                         variableInfo.Children.Clear();
                         VariableDataTreeListView.RemoveObjects(variableInfo.Children);
                     }
-                    if(ConfigValidator.ModifyChildFromVariable(variableInfo))
+                    if (ConfigValidator.ModifyChildFromVariable(variableInfo))
                     {
                         status = Status.Updated;
                     }
@@ -557,20 +499,20 @@ namespace ConfigFileAssistant_v1
             MakeCurrentLog(variableInfo.FullName, variableInfo.Value.ToString(), oldValue.ToString(), status);
             return status;
         }
-       
+
         // Toggle 
         private void ModeButton_Click(object sender, EventArgs e)
         {
             if (IsEditMode)
             {
                 IsEditMode = false;
-                ModeButton.Image = EditModeImageList.Images["edit-off"];
+                ModeButton.Image = _imageManager.EditModeImageList.Images["edit-off"];
                 ToolTip.SetToolTip(ModeButton, "Current View: Read View, Click to Edit View");
             }
             else
             {
                 IsEditMode = true;
-                ModeButton.Image = EditModeImageList.Images["edit-on"];
+                ModeButton.Image = _imageManager.EditModeImageList.Images["edit-on"];
                 ToolTip.SetToolTip(ModeButton, "Current View: Edit, Click to Read View");
             }
             modeLabel.Text = IsEditMode ? "On" : "Off";
@@ -581,13 +523,13 @@ namespace ConfigFileAssistant_v1
             if (IsExpanded)
             {
                 VariableDataTreeListView.CollapseAll();
-                ExpandAllButton.Image = ExpandImageList.Images["expand"];
+                ExpandAllButton.Image = _imageManager.ExpandImageList.Images["expand"];
                 IsExpanded = false;
             }
             else
             {
                 VariableDataTreeListView.ExpandAll();
-                ExpandAllButton.Image = ExpandImageList.Images["collapse"];
+                ExpandAllButton.Image = _imageManager.ExpandImageList.Images["collapse"];
                 IsExpanded = true;
             }
         }
@@ -596,7 +538,7 @@ namespace ConfigFileAssistant_v1
         private void ResetButton_Click(object sender, EventArgs e)
         {
             var result = MessageBox.Show("Do you really want to reset?");
-            if(result == DialogResult.OK)
+            if (result == DialogResult.OK)
             {
                 LogListBox.Items.Clear();
                 YmlVariables.Clear();
@@ -606,21 +548,21 @@ namespace ConfigFileAssistant_v1
                 AddVariablesToDataGridView(compareResult, VariableDataTreeListView);
                 SetResultPicture();
             }
-            
-        }  
+
+        }
         private void SaveAsButton_Click(object sender, EventArgs e)
         {
             SaveFileDialog saveFileDialog = new SaveFileDialog();
 
             saveFileDialog.Filter = "YAML files (*.yml)|*.yml";
             saveFileDialog.Title = "Save a Config file";
-
             saveFileDialog.FileName = "config.yml";
 
             if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
                 string filePath = saveFileDialog.FileName;
-                ConfigValidator.MakeYamlFile(filePath);
+                YamlMappingNode root = ConfigValidator.ConvertYamlFromCode();
+                _fileManager.Save(root);
                 MessageBox.Show("File saved successfully at: " + filePath);
             }
         }
@@ -638,7 +580,7 @@ namespace ConfigFileAssistant_v1
                         MessageBox.Show("A problem occurred while fixing the error.");
                         return;
                     }
-                    else if(status != Status.Skipped)
+                    else if (status != Status.Skipped)
                     {
                         fixedErrorsList.Add(key);
                     }
@@ -656,7 +598,7 @@ namespace ConfigFileAssistant_v1
                 MessageBox.Show("There are no errors to fix.");
             }
         }
-       
+
         private void RefreshResult()
         {
             var compareResult = ConfigValidator.CompareVariables(CsVariables, YmlVariables);
@@ -665,13 +607,13 @@ namespace ConfigFileAssistant_v1
         }
         private void SetResultPicture()
         {
-            if(ConfigValidator.HasErrors()) 
+            if (ConfigValidator.HasErrors())
             {
-                resultPictureBox.Image = ResultImageList.Images[1];
+                resultPictureBox.Image = _imageManager.ResultImageList.Images[1];
             }
             else
             {
-                resultPictureBox.Image = ResultImageList.Images[0];
+                resultPictureBox.Image = _imageManager.ResultImageList.Images[0];
             }
         }
         private void NextButton_Click(object sender, EventArgs e)
@@ -681,7 +623,7 @@ namespace ConfigFileAssistant_v1
             if (ConfigValidator.HasErrors())
             {
                 MessageBox.Show("There is an error.");
-                SetResultPicture() ;    
+                SetResultPicture();
             }
             else
             {
@@ -692,11 +634,10 @@ namespace ConfigFileAssistant_v1
                     {
                         if (dialog.BackupChecked)
                         {
-                            ConfigValidator.MakeBackup(BackupFilePath, FilePath);
+                            _fileManager.MakeBackup();
                         }
-
-                        // Yaml 파일 생성
-                        ConfigValidator.MakeYamlFile(FilePath);
+                        YamlMappingNode rootDocument = ConfigValidator.ConvertYamlFromCode();
+                        _fileManager.Save(rootDocument);
                         this.Close();
                     }
                 }
@@ -722,7 +663,7 @@ namespace ConfigFileAssistant_v1
                 newValue = newValue == string.Empty ? "Default Value" : newValue;
                 logMessage.Append($"{status} {oldValue} -> {newValue}");
             }
-            else if(status == Status.Skipped)
+            else if (status == Status.Skipped)
             {
                 logMessage.Append($"{status}, You should add child.");
             }
@@ -735,7 +676,7 @@ namespace ConfigFileAssistant_v1
 
         }
 
-       
+
     }
     public class MultiImageRenderer : BaseRenderer
     {
@@ -765,6 +706,5 @@ namespace ConfigFileAssistant_v1
         }
     }
 }
-
 
 

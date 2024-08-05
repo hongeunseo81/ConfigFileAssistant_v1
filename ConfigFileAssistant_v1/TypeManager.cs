@@ -11,7 +11,7 @@ using YamlDotNet.Core.Tokens;
 
 namespace ConfigTypeFinder
 {
-    public class TypeHandler
+    public class TypeManager
     {
         private static Dictionary<string, Func<object, (bool, string)>> validatorFunction;
         private static Dictionary<string, object[]> FunctionArgs;

@@ -93,7 +93,7 @@ namespace ConfigFileAssistant_v1
 
         public static void Init()
         {
-            TypeHandler.init();
+            TypeManager.init();
             Instance = Activator.CreateInstance(typeof(Config));
             CsVariables = new List<VariableInfo>();
             Yaml = new YamlStream();
@@ -210,7 +210,7 @@ namespace ConfigFileAssistant_v1
                     variableInfo.SetEnumValues(ExtractEnumValues(variableInfo,propertyType));
                     if (propertyName.Split('.').Last() != "Key")
                     {
-                        TypeHandler.AddType(variableInfo.TypeName, variableInfo.Type);
+                        TypeManager.AddType(variableInfo.TypeName, variableInfo.Type);
                     }
                 }
                 variables.Add(variableInfo);
@@ -257,7 +257,7 @@ namespace ConfigFileAssistant_v1
                 {
                     var constructorArguments = validatorAttributeData.ConstructorArguments;
                     var validatorType = (ValidatorType)constructorArguments[0].Value;
-                    TypeHandler.MakeFunction(enumField.Name,validatorType, constructorArguments[1].ToString());
+                    TypeManager.MakeFunction(enumField.Name,validatorType, constructorArguments[1].ToString());
                     enumValues.Add(new VariableInfo(enumField.Name, validatorType.ToString(), ""));
                 }
             }
@@ -395,7 +395,7 @@ namespace ConfigFileAssistant_v1
             }
             else
             {
-                if (TypeHandler.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) != string.Empty)
+                if (TypeManager.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) != string.Empty)
                 {
                     return Result.WrongValue;
                 }
@@ -416,7 +416,7 @@ namespace ConfigFileAssistant_v1
             {
                 ymlVariable.Type = values[ymlVariable.Name].Type;
                 ymlVariable.TypeName = values[ymlVariable.Name].TypeName;
-                if (TypeHandler.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) == string.Empty)
+                if (TypeManager.IsValidateType(ymlVariable, ymlVariable.Value.ToString()) == string.Empty)
                 {
                     return Result.Ok;
                 }
@@ -567,7 +567,7 @@ namespace ConfigFileAssistant_v1
             var resultMessage = string.Empty;
             if (target != null) 
             {
-                resultMessage = TypeHandler.IsValidateType(target,value.ToString());
+                resultMessage = TypeManager.IsValidateType(target,value.ToString());
                 if (resultMessage == string.Empty)
                 {
                     target.Value = value;
@@ -584,23 +584,15 @@ namespace ConfigFileAssistant_v1
 
             return resultMessage;
         }
-        public static void MakeYamlFile(string filePath)
+        public static YamlMappingNode ConvertYamlFromCode()
         {
-            YamlStream yaml = new YamlStream();
             YamlMappingNode root = new YamlMappingNode();
-
             foreach (var variable in YmlVariables)
             {
                 AddVariableToYamlNode(root, variable);
             }
-
-            yaml.Documents.Add(new YamlDocument(root));
-            using (var writer = new StreamWriter(filePath))
-            {
-                yaml.Save(writer, false);
-            }
+            return root;
         }
-
 
         private static void AddVariableToYamlNode(YamlNode parentNode, VariableInfo variable)
         {
@@ -644,14 +636,6 @@ namespace ConfigFileAssistant_v1
                     sequenceNode.Add(valueNode);
                 }
             }
-        }
-
-        public static void MakeBackup(string backupFileDirectory, string file)
-        {
-            string backupFolder = Path.Combine(backupFileDirectory, "configbackup");
-            Directory.CreateDirectory(backupFolder);
-            string backupFilePath = Path.Combine(backupFolder, $"config_{DateTime.Now:yyyyMMddHHmmss}.yml");
-            File.Copy(file, backupFilePath, true);
         }
     }
 }

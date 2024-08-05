@@ -35,7 +35,7 @@ namespace ConfigFileAssistant_v1
                     Width = 250,
                 };
 
-                var types = TypeHandler.GetAllTypes();
+                var types = TypeManager.GetAllTypes();
                 DataGridViewComboBoxColumn typeColumn = new DataGridViewComboBoxColumn
                 {
                     Name = "Type",
@@ -65,7 +65,7 @@ namespace ConfigFileAssistant_v1
                 {
                     var value = row.Cells["Value"].Value == null ? string.Empty : row.Cells["Value"].Value.ToString();
                     var variableInfo = new VariableInfo(variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(),value);
-                    TypeHandler.ConvertTypeNameToType(variableInfo);
+                    TypeManager.ConvertTypeNameToType(variableInfo);
                     CreatedVariables.Add(variableInfo);
                     this.DialogResult = DialogResult.OK;
                     this.Close();

@@ -1,8 +1,10 @@
-﻿using ConfigTypeFinder;
+﻿using ConfigFileAssistant_v1.Manager;
+using ConfigTypeFinder;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -16,7 +18,8 @@ namespace ConfigFileAssistant_v1
         [STAThread]
         static void Main()
         {
-            ConfigValidator.Init();
+            FileManager.Init(Assembly.GetExecutingAssembly().Location);
+            ConfigValidator.Init(); 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new MainForm());

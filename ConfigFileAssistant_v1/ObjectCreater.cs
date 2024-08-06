@@ -1,12 +1,6 @@
 ﻿using ConfigTypeFinder;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ConfigFileAssistant_v1
@@ -14,12 +8,12 @@ namespace ConfigFileAssistant_v1
     public partial class ObjectCreater : Form
     {
         private string variablePath; 
-        public List<VariableInfo> CreatedVariables { get; private set; }
+        public List<ConfigVariable> CreatedVariables { get; private set; }
 
         public ObjectCreater(string path)
         {
             variablePath = path;
-            CreatedVariables = new List<VariableInfo>();
+            CreatedVariables = new List<ConfigVariable>();
             InitializeComponent();
         }
 
@@ -64,9 +58,9 @@ namespace ConfigFileAssistant_v1
                 if (row.Cells["Name"].Value != null && row.Cells["Type"].Value != null)
                 {
                     var value = row.Cells["Value"].Value == null ? string.Empty : row.Cells["Value"].Value.ToString();
-                    var variableInfo = new VariableInfo(variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(),value);
-                    TypeManager.ConvertTypeNameToType(variableInfo);
-                    CreatedVariables.Add(variableInfo);
+                    var ConfigVariable = new ConfigVariable(variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(),value);
+                    TypeManager.ConvertTypeNameToType(ConfigVariable);
+                    CreatedVariables.Add(ConfigVariable);
                     this.DialogResult = DialogResult.OK;
                     this.Close();
 
@@ -76,11 +70,11 @@ namespace ConfigFileAssistant_v1
         }
     }
 
-    public class VariableInfoEventArgs : EventArgs
+    public class ConfigVariableEventArgs : EventArgs
     {
-        public List<VariableInfo> Variables { get; }
+        public List<ConfigVariable> Variables { get; }
 
-        public VariableInfoEventArgs(List<VariableInfo> variables)
+        public ConfigVariableEventArgs(List<ConfigVariable> variables)
         {
             Variables = variables;
         }

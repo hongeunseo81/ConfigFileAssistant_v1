@@ -11,40 +11,41 @@ namespace ConfigFileAssistant_v1.Manager
 {
     public class FileManager
     {
-        public string CodeFile { get; set; }
-        public string ConfigFile { get; set; }
-        public string BackupFilePath { get; set; }
+        public static string CodeFile { get; set; }
+        public  static string ConfigFile { get; set; }
+        public static string BackupFilePath { get; set; }
 
-        public FileManager(string basePath, TextBox filePathTextBox, TextBox backupPathTextBox)
+        public static void Init(string basePath)
         {
-            ConfigFile = Path.Combine(basePath, "config.yml");
-            BackupFilePath = Path.Combine(basePath, "");
-            filePathTextBox.Text = ConfigFile;
-            backupPathTextBox.Text = BackupFilePath;
+            string parentDirectoryPath = Directory.GetParent(basePath)?.Parent?.FullName;
+            CodeFile = Path.Combine(parentDirectoryPath, "Config.cs");
+            ConfigFile = Path.Combine(Path.GetDirectoryName(basePath),"config.yml");
+            BackupFilePath = Path.Combine(Path.GetDirectoryName(basePath), "configbackup");
         }
-        public void SetCodeFilePath(string filePath, TextBox filePathTextBox)
+        
+        public static void SetCodeFilePath(string filePath, TextBox filePathTextBox)
         {
             CodeFile = filePath;
             filePathTextBox.Text = filePath;
         }
-        public void SetConfigFilePath(string filePath, TextBox filePathTextBox)
+        public static void SetConfigFilePath(string filePath, TextBox filePathTextBox)
         {
             ConfigFile = filePath;
             filePathTextBox.Text = filePath;
         }
-        public void SetBackupPath(string backupFolder, TextBox backupPathTextBox)
+        public static void SetBackupPath(string backupFolder, TextBox backupPathTextBox)
         {
             BackupFilePath = backupFolder;
             backupPathTextBox.Text = backupFolder;
         }
-        public void MakeBackup()
+        public static void MakeBackup()
         {
             string backupFolder = Path.Combine(BackupFilePath, "configbackup");
             Directory.CreateDirectory(backupFolder);
             string backupFilePath = Path.Combine(backupFolder, $"config_{DateTime.Now:yyyyMMddHHmmss}.yml");
             File.Copy(ConfigFile, backupFilePath, true);
         }
-        public void Save(YamlMappingNode root) 
+        public static void Save(YamlMappingNode root) 
         {
             YamlStream yaml = new YamlStream();
             yaml.Documents.Add(new YamlDocument(root));

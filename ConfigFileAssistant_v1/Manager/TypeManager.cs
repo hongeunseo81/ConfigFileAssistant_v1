@@ -85,23 +85,23 @@ namespace ConfigTypeFinder
             }
             AddType(validatorType.ToString(), typeof(string));
         }
-        public static string IsValidateType(VariableInfo variableInfo, string value)
+        public static string IsValidateType(ConfigVariable ConfigVariable, string value)
         {
             if (value == "")
             {
                 return string.Empty;
             }
-            if (variableInfo.Type == typeof(bool))
+            if (ConfigVariable.Type == typeof(bool))
             {
                 return (value == "True" || value == "False") ? string.Empty : "Please enter True or False.";
             }
-            if (validatorFunction.TryGetValue(variableInfo.Name, out var validatorFunc))
+            if (validatorFunction.TryGetValue(ConfigVariable.Name, out var validatorFunc))
             {
                 var isValidate = validatorFunc(value).Item1;
                 var message = validatorFunc(value).Item2;
-                if (!isValidate && FunctionArgs.ContainsKey(variableInfo.Name))
+                if (!isValidate && FunctionArgs.ContainsKey(ConfigVariable.Name))
                 {
-                    object[] args = FunctionArgs[variableInfo.Name];
+                    object[] args = FunctionArgs[ConfigVariable.Name];
                     message = $"Please enter a value between {args[0]} and {args[1]}.";
                 }
                 return message;
@@ -110,17 +110,17 @@ namespace ConfigTypeFinder
             {
                 bool isValid = false;
                 string message = string.Empty;
-                if (variableInfo.Type == typeof(Int32))
+                if (ConfigVariable.Type == typeof(Int32))
                 {
                     isValid = Int32.TryParse(value.ToString(), out int intValue);
                     message = isValid ? string.Empty : "Please enter a value between -2,147,483,648 and 2,147,483,647";
                 }
-                else if (variableInfo.Type == typeof(Int64))
+                else if (ConfigVariable.Type == typeof(Int64))
                 {
                     isValid = Int64.TryParse(value.ToString(), out long longValue);
                     message = isValid ? string.Empty : "Please enter a value between -9,223,372,036,854,775,808 and 9,223,372,036,854,775,807";
                 }
-                else if (variableInfo.Type == typeof(DateTime))
+                else if (ConfigVariable.Type == typeof(DateTime))
                 {
                     isValid = DateTime.TryParse(value.ToString(), out DateTime dateTimeValue);
                     message = isValid ? string.Empty : "Please enter a format yyyy-MM-ddTHH:mm:ss.fffffffK";
@@ -131,7 +131,7 @@ namespace ConfigTypeFinder
 
         }
 
-        public static void ConvertTypeNameToType(VariableInfo newVariable)
+        public static void ConvertTypeNameToType(ConfigVariable newVariable)
         {
             var typeName = newVariable.TypeName;
             newVariable.Type = types[typeName];

@@ -12,8 +12,6 @@ using ConfigTypeFinder;
 
 namespace ConfigFileAssistant_v1
 {
-    
-
     public enum Result
     {
         Ok,
@@ -314,7 +312,7 @@ namespace ConfigFileAssistant_v1
         private static void SetResult(ConfigVariable ConfigVariable, Result result)
         {
             ConfigVariable.Result = result;
-            if(result != Result.Ok)
+            if(result != Result.Ok && result != Result.NoChild)
             {
                 ErrorVariables.Add(ConfigVariable.FullName, ConfigVariable);
             }

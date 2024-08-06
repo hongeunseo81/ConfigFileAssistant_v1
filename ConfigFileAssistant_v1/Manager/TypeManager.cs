@@ -106,7 +106,29 @@ namespace ConfigTypeFinder
                 }
                 return message;
             }
-            return string.Empty;
+            else
+            {
+                bool isValid = false;
+                string message = string.Empty;
+                if (variableInfo.Type == typeof(Int32))
+                {
+                    isValid = Int32.TryParse(value.ToString(), out int intValue);
+                    message = isValid ? string.Empty : "Please enter a value between -2,147,483,648 and 2,147,483,647";
+                }
+                else if (variableInfo.Type == typeof(Int64))
+                {
+                    isValid = Int64.TryParse(value.ToString(), out long longValue);
+                    message = isValid ? string.Empty : "Please enter a value between -9,223,372,036,854,775,808 and 9,223,372,036,854,775,807";
+                }
+                else if (variableInfo.Type == typeof(DateTime))
+                {
+                    isValid = DateTime.TryParse(value.ToString(), out DateTime dateTimeValue);
+                    message = isValid ? string.Empty : "Please enter a format yyyy-MM-ddTHH:mm:ss.fffffffK";
+                }
+
+                return message;
+            }
+
         }
 
         public static void ConvertTypeNameToType(VariableInfo newVariable)

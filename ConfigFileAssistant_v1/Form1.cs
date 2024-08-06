@@ -1,5 +1,4 @@
 ﻿using BrightIdeasSoftware;
-using CalibrationTool;
 using ConfigFileAssistant_v1.Manager;
 using System;
 using System.Collections.Generic;
@@ -50,7 +49,7 @@ namespace ConfigFileAssistant_v1
         }
         private void Init()
         {
-            _fileManager = new FileManager(BasePath, FilePathTextBox, BackupPathTextBox);
+            _fileManager = new FileManager(BasePath, ConfigFileTextBox, BackupPathTextBox);
             _imageManager = new ImageManager(BasePath);
             this.Icon = _imageManager.LogoIcon;
             LogoPictureBox.Image = _imageManager.LogoImage;
@@ -63,8 +62,11 @@ namespace ConfigFileAssistant_v1
             _imageManager.SetButtonImage(ModeButton, "edit-off", _imageManager.EditModeImageList, false);
             ToolTip.SetToolTip(ModeButton, "Current View: Read-Only, Click to Edit");
 
-            _imageManager.SetButtonImage(FileBrowseButton, "browse", _imageManager.ButtonImageList, false);
-            ToolTip.SetToolTip(FileBrowseButton, "Browse other config files");
+            _imageManager.SetButtonImage(CodeBrowseButton, "browse", _imageManager.ButtonImageList, false);
+            ToolTip.SetToolTip(CodeBrowseButton, "Browse other code files");
+
+            _imageManager.SetButtonImage(ConfigBrowseButton, "browse", _imageManager.ButtonImageList, false);
+            ToolTip.SetToolTip(ConfigBrowseButton, "Browse other config files");
 
             _imageManager.SetButtonImage(BackupBrowseButton, "browse", _imageManager.ButtonImageList, false);
             ToolTip.SetToolTip(BackupBrowseButton, "Change backup file path");
@@ -92,7 +94,7 @@ namespace ConfigFileAssistant_v1
 
         private void SetupData()
         {
-            ConfigValidator.LoadYamlFile(_fileManager.FilePath);
+            ConfigValidator.LoadYamlFile(_fileManager.ConfigFile);
             CsVariables = ConfigValidator.ExtractCsVariables();
             YmlVariables = ConfigValidator.ExtractYmlVariables();
             ResultVariables = ConfigValidator.CompareVariables(CsVariables, YmlVariables);
@@ -242,39 +244,6 @@ namespace ConfigFileAssistant_v1
             e.Handled = true;
         }
 
-        // Browse files
-        private void BrowseButton_Click(object sender, EventArgs e)
-        {
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
-            {
-                openFileDialog.Filter = "YAML files (*.yml)|*.yml";
-                openFileDialog.Title = "Select a Config file";
-
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    _fileManager.SetFilePath(openFileDialog.FileName, FilePathTextBox);
-                    ConfigValidator.ClearAllData();
-                    ConfigValidator.Init();
-                    SetupData();
-                }
-            }
-        }
-        private void BackupBrowseButton_Click(object sender, EventArgs e)
-        {
-            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
-            {
-                folderBrowserDialog.Description = "Select a folder to back up your data.";
-                folderBrowserDialog.ShowNewFolderButton = true;
-
-                DialogResult result = folderBrowserDialog.ShowDialog();
-
-                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
-                {
-                    _fileManager.SetBackupPath(folderBrowserDialog.SelectedPath, BackupPathTextBox);
-                }
-            }
-        }
-
         // Edit cells
         private void AddChildMenuItem_Click(object sender, EventArgs e)
         {
@@ -309,7 +278,7 @@ namespace ConfigFileAssistant_v1
                                 VariableDataTreeListView.SetObjects(YmlVariables);
                                 VariableDataTreeListView.SelectedObject = newObjects[i];
                             }
-                            MakeCurrentLog(newObjects[i].FullName, newObjects[i].Value.ToString(), "", status);
+                            MakeVariableLog(newObjects[i].FullName, newObjects[i].Value.ToString(), "", status);
                         }
                         VariableDataTreeListView.SelectedIndex = selectedObject.Children.Count + newObjects.Count;
                         RefreshResult();
@@ -350,7 +319,7 @@ namespace ConfigFileAssistant_v1
                             VariableDataTreeListView.SetObjects(YmlVariables);
                             VariableDataTreeListView.SelectedObject = newObjects[i];
                         }
-                        MakeCurrentLog(newObjects[i].FullName, newObjects[i].Value.ToString(), "", status);
+                        MakeVariableLog(newObjects[i].FullName, newObjects[i].Value.ToString(), "", status);
                     }
                     VariableDataTreeListView.SelectedIndex = selectedIndex + newObjects.Count;
                     RefreshResult();
@@ -373,7 +342,7 @@ namespace ConfigFileAssistant_v1
                     VariableDataTreeListView.SetObjects(YmlVariables);
                     RefreshResult();
                 }
-                MakeCurrentLog(selectedObject.FullName, "", "", status);
+                MakeVariableLog(selectedObject.FullName, "", "", status);
             }
         }
         private void DataTreeListView_CellOver(object sender, CellOverEventArgs e)
@@ -453,7 +422,7 @@ namespace ConfigFileAssistant_v1
                     }
                     else
                     {
-                        MakeCurrentLog(variable.FullName, e.NewValue.ToString(), e.Value.ToString(), Status.Updated);
+                        MakeVariableLog(variable.FullName, e.NewValue.ToString(), e.Value.ToString(), Status.Updated);
                     }
                 }
             }
@@ -496,7 +465,7 @@ namespace ConfigFileAssistant_v1
                 default:
                     break;
             }
-            MakeCurrentLog(variableInfo.FullName, variableInfo.Value.ToString(), oldValue.ToString(), status);
+            MakeVariableLog(variableInfo.FullName, variableInfo.Value.ToString(), oldValue.ToString(), status);
             return status;
         }
 
@@ -540,13 +509,13 @@ namespace ConfigFileAssistant_v1
             var result = MessageBox.Show("Do you really want to reset?");
             if (result == DialogResult.OK)
             {
-                LogListBox.Items.Clear();
                 YmlVariables.Clear();
                 ConfigValidator.ClearAllData();
                 YmlVariables = ConfigValidator.ExtractYmlVariables();
                 var compareResult = ConfigValidator.CompareVariables(CsVariables, YmlVariables);
                 AddVariablesToDataGridView(compareResult, VariableDataTreeListView);
                 SetResultPicture();
+                MakeResetLog(_fileManager.ConfigFile);
             }
 
         }
@@ -648,7 +617,81 @@ namespace ConfigFileAssistant_v1
         {
             this.Close();
         }
-        private void MakeCurrentLog(string fullname, string newValue, string oldValue, Status status)
+        
+        
+        private void CodeBrowseButton_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "C# files (*.cs)|*.cs";
+                openFileDialog.Title = "Select a Code file";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    var oldFile = _fileManager.ConfigFile;
+                    var newFile = openFileDialog.FileName; 
+                    _fileManager.SetCodeFilePath(openFileDialog.FileName, CodeFileTextBox);
+                    MakeFileLog("Code", oldFile,newFile);
+                    ConfigValidator.ClearAllData();
+                    ConfigValidator.Init();
+                    SetupData();
+                }
+            }
+
+        }
+
+        private void ConfigBrowseButton_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "YAML files (*.yml)|*.yml";
+                openFileDialog.Title = "Select a Config file";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    var oldFile = _fileManager.ConfigFile;
+                    var newFile = openFileDialog.FileName;
+                    _fileManager.SetCodeFilePath(openFileDialog.FileName, CodeFileTextBox);
+                    MakeFileLog("Code", oldFile, newFile);
+                    ConfigValidator.ClearAllData();
+                    ConfigValidator.Init();
+                    SetupData();
+                }
+            }
+
+        }
+        private void BackupBrowseButton_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            {
+                folderBrowserDialog.Description = "Select a folder to back up your data.";
+                folderBrowserDialog.ShowNewFolderButton = true;
+
+                DialogResult result = folderBrowserDialog.ShowDialog();
+
+                if (result == DialogResult.OK && !string.IsNullOrWhiteSpace(folderBrowserDialog.SelectedPath))
+                {
+                    var oldFolder = _fileManager.ConfigFile;
+                    var newFolder = folderBrowserDialog.SelectedPath;
+                    _fileManager.SetBackupPath(folderBrowserDialog.SelectedPath, BackupPathTextBox);
+                    MakeFileLog("Backup path", oldFolder, newFolder);
+                }
+            }
+        }
+
+        private void MakeResetLog(string fileName)
+        {
+            StringBuilder logMessage = new StringBuilder($"[{DateTime.Now}]: ").Append($"{fileName} has been reset.");
+            LogListBox.Items.Add(logMessage);
+            LogListBox.SelectedIndex = LogListBox.Items.Count - 1;
+        }
+        private void MakeFileLog(string fileType, string oldFile, string newFile)
+        {
+            StringBuilder logMessage = new StringBuilder($"[{DateTime.Now}]: ").Append($"{fileType} has been changed. {oldFile} -> {newFile}");
+            LogListBox.Items.Add(logMessage);
+            LogListBox.SelectedIndex = LogListBox.Items.Count - 1;
+        }
+        private void MakeVariableLog(string fullname, string newValue, string oldValue, Status status)
         {
             StringBuilder logMessage = new StringBuilder();
             var name = fullname.Split('.').Last();
@@ -675,7 +718,6 @@ namespace ConfigFileAssistant_v1
             LogListBox.SelectedIndex = LogListBox.Items.Count - 1;
 
         }
-
 
     }
     public class MultiImageRenderer : BaseRenderer

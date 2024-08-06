@@ -1,35 +1,58 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-
-using CoPick.Logging;
-using CoPick.Robot;
-
+﻿using CoPick.Logging;
 using CoPick.Setting;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using CoPick.Plc;
 
-namespace CalibrationTool
+namespace WheelHetergeneousInspectionSystem.Models
 {
-    public class Config
+    [Serializable]
+    public class Config : ICustomTypeDescriptor
     {
-        public Dictionary<string, Dictionary<RobotAttribute, string>> RobotConfigs { get; set; } = new Dictionary<string, Dictionary<RobotAttribute, string>>();
-        public Dictionary<string, List<Dictionary<CameraAttribute, string>>> CameraConfigs { get; set; } = new Dictionary<string, List<Dictionary<CameraAttribute, string>>>();
+        [Browsable(false)]
+        public int RecentlyUsedWheel { get; set; }
+        [Browsable(false)]
+        public Dictionary<string, Dictionary<Camera2DAttribute, string>> Camera2DConfigs { get; set; }
+        [Browsable(false)]
+        public Dictionary<string, Dictionary<PlcAttribute, string>> PlcConfigs { get; set; }
+        public string Plc { get; set; }
 
-        public string Camera { get; set; }
-        public string InstallRobot { get; set; }
+        [LocalizedDescription("WheelName")]
+        [LocalizedCategory("Common", 1, 2)]
+        [Browsable(false)]
+        public string WheelName { get; set; } = "unknown";
+        [LocalizedCategory("Model")]
+        public string ModelPath { get; set; } = "C:/";
+        [LocalizedCategory("Model")]
+        [Browsable(false)]
+        public int ModelInputWidth { get; set; } = 384;
+        [LocalizedCategory("Model")]
+        [Browsable(false)]
+        public int ModelInputHeight { get; set; } = 256;
+        [LocalizedCategory("Model")]
+        [Browsable(false)]
+        public string DictionaryPath { get; set; } = "C:/";
+        [LocalizedCategory("Model")]
+        [Browsable(false)]
+        public int DictionarySize { get; set; } = 512;
+        [LocalizedCategory("Model")]
+        public string InspectionImagePath { get; set; } = "./inspectionImages";
+        [LocalizedCategory("Model")]
+        [Browsable(false)]
+        public int WheelCount { get; set; } = 5;
 
-        public string ScanRobot { get; set; }
-        public CalibrationMode Mode { get; set; }
+        [LocalizedCategory("Camera")]
+        public string Camera2D { get; set; } = "Basler";
+
 
         private string _logPath = "./log";
-
-        
+        [Browsable(false)]
         public string LogPath
         {
-            get
-            {
-                return _logPath;
-            }
-
+            get => _logPath;
             set
             {
                 try
@@ -37,203 +60,200 @@ namespace CalibrationTool
                     Path.GetFullPath(value);
                     _logPath = value;
                 }
-                catch (Exception)
-                {
-                }
+                catch (Exception) { }
             }
         }
-
-        public LogLevel MinimumFileLogLevel { get; set; }
-        public LogLevel MinimumUiLogLevel { get; set; }
+        [Browsable(false)]
+        public LogLevel MinimumFileLogLevel { get; set; } = LogLevel.Debug;
+        [Browsable(false)]
+        public LogLevel MinimumUiLogLevel { get; set; } = LogLevel.Debug;
+        [Browsable(false)]
+        public OperationMode StartMode { get; set; }
+        [Browsable(false)]
+        public long CameraMaxScanTime { get; set; } = 5000;
+        [Browsable(false)]
         public string Language { get; set; } = "ko-KR";
+        [Browsable(false)]
+        public string DailyProductionResetTime { get; set; } = "00:00";
+        [Browsable(false)]
+        public string SensorType { get; set; } = "Pylon";
+        [Browsable(false)]
+        public string ModelType { get; set; } = "Akaze";
+        [Browsable(false)]
+        public DateTime StartTimeToGetNgList { get; set; } = DateTime.Now;
+
+        public Config()
+        {
+            PlcConfigs = new Dictionary<string, Dictionary<PlcAttribute, string>>() { };
+            Camera2DConfigs = new Dictionary<string, Dictionary<Camera2DAttribute, string>>();
+            Camera2DConfigs["Basler"] = DefaultSettingLoader.Camera2Ds[Camera2DMaker.BASLER]();
+            UpdatePropertyDescriptors();
+        }
+
+        [NonSerialized]
+        private PropertyDescriptorCollection _pdColl;
+
+        #region Implementation of ICustomTypeDescriptor
+        public void UpdatePropertyDescriptors()
+        {
+            PropertyDescriptorCollection pdc = TypeDescriptor.GetProperties(this);
+            PropertyDescriptor[] propertyDescriptorArray = typeof(Config).GetProperties()
+                .Select(m => new WheelInspectionConfigPropertyDescriptor(pdc[m.Name], m.GetCustomAttributes(false).Cast<Attribute>().ToArray()))
+                .ToArray();
+            _pdColl = new PropertyDescriptorCollection(propertyDescriptorArray);
+        }
+
+        public AttributeCollection GetAttributes() => TypeDescriptor.GetAttributes(this, true);
+        public string GetClassName() => TypeDescriptor.GetClassName(this, true);
+        public string GetComponentName() => TypeDescriptor.GetComponentName(this, true);
+        public TypeConverter GetConverter() => TypeDescriptor.GetConverter(this, true);
+        public EventDescriptor GetDefaultEvent() => TypeDescriptor.GetDefaultEvent(this, true);
+        public PropertyDescriptor GetDefaultProperty() => TypeDescriptor.GetDefaultProperty(this, true);
+        public object GetEditor(Type editorBaseType) => TypeDescriptor.GetEditor(this, editorBaseType, true);
+        public EventDescriptorCollection GetEvents() => TypeDescriptor.GetEvents(this, true);
+        public EventDescriptorCollection GetEvents(Attribute[] attributes) => TypeDescriptor.GetEvents(this, attributes, true);
+        public PropertyDescriptorCollection GetProperties() => _pdColl;
+        public PropertyDescriptorCollection GetProperties(Attribute[] attributes) => _pdColl;
+        public object GetPropertyOwner(PropertyDescriptor pd) => this;
+        #endregion
+    }
+
+    public class WheelTypeAndName
+    {
+        public string WheelType { get; private set; }
+        public string WheelName { get; private set; }
+
+        public WheelTypeAndName(string wheelType, string wheelName)
+        {
+            WheelType = wheelType;
+            WheelName = wheelName;
+        }
     }
 
     public static class DefaultSettingLoader
     {
-        public static Dictionary<RobotMaker, Func<Dictionary<RobotAttribute, string>>> Robots = new Dictionary<RobotMaker, Func<Dictionary<RobotAttribute, string>>>()
+        public static Dictionary<Camera2DMaker, Func<Dictionary<Camera2DAttribute, string>>> Camera2Ds = new Dictionary<Camera2DMaker, Func<Dictionary<Camera2DAttribute, string>>>()
         {
-            [RobotMaker.YASKAWA] = GetYaskawaSettings,
-            [RobotMaker.KAWASAKI] = GetKawasakiSettings,
-            [RobotMaker.FANUC] = GetFanucSettings,
-            [RobotMaker.HYUNDAI] = GetHyundaiSettings,
+            [Camera2DMaker.BASLER] = GetBaslerSettings,
         };
 
-        public static Dictionary<RobotAttribute, string> GetYaskawaSettings()
+        public static Dictionary<LineLaserMaker, Func<Dictionary<LineLaserAttribute, string>>> LineLasers = new Dictionary<LineLaserMaker, Func<Dictionary<LineLaserAttribute, string>>>()
         {
-            return new Dictionary<RobotAttribute, string>()
-            {
-                [RobotAttribute.Maker] = RobotMaker.YASKAWA.ToString(),
-                [RobotAttribute.Ip] = "",
-                [RobotAttribute.Port] = "",
-                [RobotAttribute.YrcCoordinateSystem] = "BASE",
-                [RobotAttribute.CalibrationRcVar] = "",
-                [RobotAttribute.CalibrationVcVar] = "",
-                [RobotAttribute.CalibrationFinVar] = "",
-                [RobotAttribute.CalibrationJobNames] = "",
-                [RobotAttribute.CalibrationUpdateJobNames] = ""
-            };
-        }
-
-        public static Dictionary<RobotAttribute, string> GetKawasakiSettings()
-        {
-            return new Dictionary<RobotAttribute, string>()
-            {
-                [RobotAttribute.Maker] = RobotMaker.KAWASAKI.ToString(),
-                [RobotAttribute.Ip] = "",
-                [RobotAttribute.Port] = "",
-                [RobotAttribute.MaxNumberOfTrials] = "",
-                [RobotAttribute.CalibrationRcVar] = "",
-                [RobotAttribute.CalibrationVcVar] = "",
-                [RobotAttribute.CalibrationFinVar] = "",
-                [RobotAttribute.CalibrationJobNames] = "",
-                [RobotAttribute.CalibrationUpdateJobNames] = ""
-            };
-        }
-
-        public static Dictionary<RobotAttribute, string> GetFanucSettings()
-        {
-            return new Dictionary<RobotAttribute, string>()
-            {
-                [RobotAttribute.Maker] = RobotMaker.FANUC.ToString(),
-                [RobotAttribute.Ip] = "",
-                [RobotAttribute.Port] = "",
-                [RobotAttribute.UserFrame] = "WORLD",
-                [RobotAttribute.CalibrationRcVar] = "",
-                [RobotAttribute.CalibrationVcVar] = "",
-                [RobotAttribute.CalibrationFinVar] = "",
-                [RobotAttribute.CalibrationJobNames] = "",
-                [RobotAttribute.CalibrationUpdateJobNames] = ""
-            };
-        }
-
-        public static Dictionary<RobotAttribute, string> GetHyundaiSettings()
-        {
-            return new Dictionary<RobotAttribute, string>()
-            {
-                [RobotAttribute.Maker] = RobotMaker.HYUNDAI.ToString(),
-                [RobotAttribute.Ip] = "192.168.178.206",
-                [RobotAttribute.ClientIp] = "192.168.178.102",
-                [RobotAttribute.HrCoordinateSystem] = "BASE",
-                [RobotAttribute.CalibrationRcVar] = "",
-                [RobotAttribute.CalibrationVcVar] = "",
-                [RobotAttribute.CalibrationFinVar] = "",
-                [RobotAttribute.CalibrationJobNames] = "",
-                [RobotAttribute.CalibrationUpdateJobNames] = ""
-            };
-        }
-
-        public static Dictionary<CameraModel, Func<Dictionary<CameraAttribute, string>>> Cameras = new Dictionary<CameraModel, Func<Dictionary<CameraAttribute, string>>>()
-        {
-            [CameraModel.CoPick3D_250] = GetCoPick3D250Settings,
-            [CameraModel.CoPick3D_350] = GetCoPick3D350Settings,
-            [CameraModel.Phoxi_M] = GetPhoxiMSettings,
-            [CameraModel.Phoxi_S] = GetPhoxiSSettings,
+            [LineLaserMaker.SMARTRAY] = GetSmartRaySettings,
         };
 
-        private static Dictionary<CameraAttribute, string> GetPhoxiSSettings()
+        private static Dictionary<Camera2DAttribute, string> GetBaslerSettings()
         {
-            return new Dictionary<CameraAttribute, string>()
+            return new Dictionary<Camera2DAttribute, string>()
             {
-                [CameraAttribute.Model] = CameraModel.Phoxi_S.ToString(),
-                [CameraAttribute.Serial] = "",
-                [CameraAttribute.Ip] = "",
-                [CameraAttribute.CalibrationDataPath] = "./"
+                [Camera2DAttribute.IPAdr] = "192.168.178.221",
+                [Camera2DAttribute.CameraResolutionRoiTopLeftX] = "0",
+                [Camera2DAttribute.CameraResolutionRoiTopLeftY] = "0",
+                [Camera2DAttribute.CameraResolutionRoiWidth] = "658",
+                [Camera2DAttribute.CameraResolutionRoiHeight] = "492",
+                [Camera2DAttribute.Exposure] = "1000",
+                [Camera2DAttribute.MaxFPS] = "30",
+                [Camera2DAttribute.Gain] = "0",
+                [Camera2DAttribute.ImageFolderPath] = "./images",
+                [Camera2DAttribute.FPS] = "15"
             };
         }
 
-        private static Dictionary<CameraAttribute, string> GetPhoxiMSettings()
+        private static Dictionary<LineLaserAttribute, string> GetSmartRaySettings()
         {
-            return new Dictionary<CameraAttribute, string>()
+            return new Dictionary<LineLaserAttribute, string>()
             {
-                [CameraAttribute.Model] = CameraModel.Phoxi_M.ToString(),
-                [CameraAttribute.Serial] = "",
-                [CameraAttribute.Ip] = "",
-                [CameraAttribute.CalibrationDataPath] = "./"
+                [LineLaserAttribute.IPAdr] = "192.168.178.200",
+                [LineLaserAttribute.CameraResolutionRoiTopLeftX] = "384",
+                [LineLaserAttribute.CameraResolutionRoiTopLeftY] = "200",
+                [LineLaserAttribute.CameraResolutionRoiWidth] = "1120",
+                [LineLaserAttribute.CameraResolutionRoiHeight] = "800",
+                [LineLaserAttribute.CamIndex] = "0",
+                [LineLaserAttribute.CamName] = "unknown",
+                [LineLaserAttribute.PortNum] = "40",
+                [LineLaserAttribute.NumberOfExpectedProfiles] = "0",
+                [LineLaserAttribute.PacketSize] = "1024",
+                [LineLaserAttribute.PacketTimeOut] = "10",
+                [LineLaserAttribute.Width] = "0",
+                [LineLaserAttribute.ParamSetPath] = "ECCO85_Liveimage.par",
+                [LineLaserAttribute.ExposureTime1MicroS] = "5000",
+                [LineLaserAttribute.ExposureTime2MicroS] = "10000",
+                [LineLaserAttribute.Gain] = "0",
+
+                //offline
+                [LineLaserAttribute.ImageFolderPath] = "C:/",
+                [LineLaserAttribute.FPS] = "20"
             };
         }
 
-        private static Dictionary<CameraAttribute, string> GetCoPick3D350Settings()
+        public static Dictionary<PlcModel, Func<Dictionary<PlcAttribute, string>>> Plcs = new Dictionary<PlcModel, Func<Dictionary<PlcAttribute, string>>>()
         {
-            return new Dictionary<CameraAttribute, string>()
+            [PlcModel.S7] = GetSiemensSettings,
+            [PlcModel.MELSEC] = GetMelsecSettings,
+            [PlcModel.AB] = GetAbSvnSettings
+        };
+
+        private static Dictionary<PlcAttribute, string> GetMelsecSettings()
+        {
+            return new Dictionary<PlcAttribute, string>()
             {
-                [CameraAttribute.Model] = CameraModel.CoPick3D_350.ToString(),
-                [CameraAttribute.Serial] = "",
-                [CameraAttribute.Alias] = "",
-                [CameraAttribute.Ip] = "",
-                [CameraAttribute.ScanMode] = CameraScanMode.MultiCamera.ToString(),
-                [CameraAttribute.OutputResolution] = OutputResolution.W1224xH1024.ToString(),
-                [CameraAttribute.IsolationDistance] = "1.0",
-                [CameraAttribute.IsolationMinNeighbors] = "10",
-                [CameraAttribute.SendNormalMap] = "False",
-                [CameraAttribute.TextureExposureMultiplier] = "1",
-                [CameraAttribute.TextureExposure1] = "16.0",
-                [CameraAttribute.TextureExposure2] = "16.0",
-                [CameraAttribute.TextureExposure3] = "16.0",
-                [CameraAttribute.TextureGain1] = "5.0",
-                [CameraAttribute.TextureGain2] = "5.0",
-                [CameraAttribute.TextureGain3] = "5.0",
-                [CameraAttribute.PatternExposureMultiplier] = "1",
-                [CameraAttribute.PatternExposure1] = "10.0",
-                [CameraAttribute.PatternExposure2] = "20.0",
-                [CameraAttribute.PatternExposure3] = "30.0",
-                [CameraAttribute.PatternGain1] = "3.0",
-                [CameraAttribute.PatternGain2] = "3.0",
-                [CameraAttribute.PatternGain3] = "3.0",
-                [CameraAttribute.DecodeThreshold1] = "1",
-                [CameraAttribute.DecodeThreshold2] = "1",
-                [CameraAttribute.DecodeThreshold3] = "1",
-                [CameraAttribute.NormalEstimationRadius] = "2.0",
-                [CameraAttribute.SurfaceSmoothness] = SurfaceSmoothness.Sharp.ToString(),
-                [CameraAttribute.StructurePatternType] = StructurePatternType.NormalAndInverted.ToString(),
-                [CameraAttribute.LedPower] = "1",
-                [CameraAttribute.PatternStrategy] = PatternStrategy.PhaseShiftDouble.ToString(),
-                [CameraAttribute.PatternColor] = "3",
-                [CameraAttribute.TextureSource] = "2",
-                [CameraAttribute.MaxNomalAngle] = "90",
-                [CameraAttribute.CalibrationDataPath] = "./"
+                [PlcAttribute.LOGICAL_STATION] = "0"
             };
         }
 
-        private static Dictionary<CameraAttribute, string> GetCoPick3D250Settings()
+        private static Dictionary<PlcAttribute, string> GetSiemensSettings()
         {
-            return new Dictionary<CameraAttribute, string>()
+            return new Dictionary<PlcAttribute, string>()
             {
-                [CameraAttribute.Model] = CameraModel.CoPick3D_250.ToString(),
-                [CameraAttribute.Serial] = "",
-                [CameraAttribute.Alias] = "",
-                [CameraAttribute.Ip] = "",
-                [CameraAttribute.ScanMode] = CameraScanMode.MultiCamera.ToString(),
-                [CameraAttribute.OutputResolution] = OutputResolution.W1224xH1024.ToString(),
-                [CameraAttribute.IsolationDistance] = "1.0",
-                [CameraAttribute.IsolationMinNeighbors] = "10",
-                [CameraAttribute.SendNormalMap] = "False",
-                [CameraAttribute.TextureExposureMultiplier] = "1",
-                [CameraAttribute.TextureExposure1] = "16.0",
-                [CameraAttribute.TextureExposure2] = "16.0",
-                [CameraAttribute.TextureExposure3] = "16.0",
-                [CameraAttribute.TextureGain1] = "5.0",
-                [CameraAttribute.TextureGain2] = "5.0",
-                [CameraAttribute.TextureGain3] = "5.0",
-                [CameraAttribute.PatternExposureMultiplier] = "1",
-                [CameraAttribute.PatternExposure1] = "10.0",
-                [CameraAttribute.PatternExposure2] = "20.0",
-                [CameraAttribute.PatternExposure3] = "30.0",
-                [CameraAttribute.PatternGain1] = "3.0",
-                [CameraAttribute.PatternGain2] = "3.0",
-                [CameraAttribute.PatternGain3] = "3.0",
-                [CameraAttribute.DecodeThreshold1] = "1",
-                [CameraAttribute.DecodeThreshold2] = "1",
-                [CameraAttribute.DecodeThreshold3] = "1",
-                [CameraAttribute.NormalEstimationRadius] = "2.0",
-                [CameraAttribute.SurfaceSmoothness] = SurfaceSmoothness.Sharp.ToString(),
-                [CameraAttribute.StructurePatternType] = StructurePatternType.NormalAndInverted.ToString(),
-                [CameraAttribute.LedPower] = "1",
-                [CameraAttribute.PatternStrategy] = PatternStrategy.PhaseShiftDouble.ToString(),
-                [CameraAttribute.PatternColor] = PatternColor.Blue.ToString(),
-                [CameraAttribute.TextureSource] = TextureSource.Led.ToString(),
-                [CameraAttribute.MaxNomalAngle] = "90",
-                [CameraAttribute.CalibrationDataPath] = "./"
+                [PlcAttribute.IP] = "192.168.178.5",
+                [PlcAttribute.RACK] = "0",
+                [PlcAttribute.SLOT] = "2",
+                [PlcAttribute.WRITE_DB] = "100",
+                [PlcAttribute.READ_DB] = "100"
+            };
+        }
+        private static Dictionary<PlcAttribute, string> GetAbSvnSettings()
+        {
+            return new Dictionary<PlcAttribute, string>()
+            {
+                [PlcAttribute.Model] = PlcModel.AB.ToString(),
+                [PlcAttribute.IP] = "192.168.1.200",
+                [PlcAttribute.TagPrefix] = "PRIMER_VISION_",
+                [PlcAttribute.HeartbeatTag] = "PRIMER_VISION_LIVE_BIT"
             };
         }
     }
+
+    public class WheelInspectionConfigPropertyDescriptor : PropertyDescriptor
+    {
+        private PropertyDescriptor _originalPd;
+
+        public WheelInspectionConfigPropertyDescriptor(PropertyDescriptor pd, Attribute[] attrs)
+            : base(pd, attrs)
+        {
+            _originalPd = pd;
+        }
+
+        public override Type ComponentType
+        {
+            get => _originalPd.ComponentType;
+        }
+        public override bool IsReadOnly
+        {
+            get => _originalPd.IsReadOnly;
+        }
+
+        public override Type PropertyType
+        {
+            get => _originalPd.PropertyType;
+        }
+
+        public override bool CanResetValue(object component) => _originalPd.CanResetValue(component);
+        public override object GetValue(object component) => _originalPd.GetValue(component);
+        public override void ResetValue(object component) => _originalPd.ResetValue(component);
+        public override void SetValue(object component, object value) => _originalPd.SetValue(component, value);
+        public override bool ShouldSerializeValue(object component) => _originalPd.ShouldSerializeValue(component);
+    }
+
 }
+

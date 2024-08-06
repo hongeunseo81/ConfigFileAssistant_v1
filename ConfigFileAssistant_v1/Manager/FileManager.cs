@@ -11,20 +11,25 @@ namespace ConfigFileAssistant_v1.Manager
 {
     public class FileManager
     {
-        public string FilePath { get; set; }
+        public string CodeFile { get; set; }
+        public string ConfigFile { get; set; }
         public string BackupFilePath { get; set; }
-        public string CodePath { get; set; }
 
         public FileManager(string basePath, TextBox filePathTextBox, TextBox backupPathTextBox)
         {
-            FilePath = Path.Combine(basePath, "config.yml");
+            ConfigFile = Path.Combine(basePath, "config.yml");
             BackupFilePath = Path.Combine(basePath, "");
-            filePathTextBox.Text = FilePath;
+            filePathTextBox.Text = ConfigFile;
             backupPathTextBox.Text = BackupFilePath;
         }
-        public void SetFilePath(string filePath, TextBox filePathTextBox)
+        public void SetCodeFilePath(string filePath, TextBox filePathTextBox)
         {
-            FilePath = filePath;
+            CodeFile = filePath;
+            filePathTextBox.Text = filePath;
+        }
+        public void SetConfigFilePath(string filePath, TextBox filePathTextBox)
+        {
+            ConfigFile = filePath;
             filePathTextBox.Text = filePath;
         }
         public void SetBackupPath(string backupFolder, TextBox backupPathTextBox)
@@ -37,13 +42,13 @@ namespace ConfigFileAssistant_v1.Manager
             string backupFolder = Path.Combine(BackupFilePath, "configbackup");
             Directory.CreateDirectory(backupFolder);
             string backupFilePath = Path.Combine(backupFolder, $"config_{DateTime.Now:yyyyMMddHHmmss}.yml");
-            File.Copy(FilePath, backupFilePath, true);
+            File.Copy(ConfigFile, backupFilePath, true);
         }
         public void Save(YamlMappingNode root) 
         {
             YamlStream yaml = new YamlStream();
             yaml.Documents.Add(new YamlDocument(root));
-            using (var writer = new StreamWriter(FilePath))
+            using (var writer = new StreamWriter(ConfigFile))
             {
                 yaml.Save(writer, false);
             }

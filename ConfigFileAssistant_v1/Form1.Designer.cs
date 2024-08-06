@@ -45,21 +45,24 @@
             this.nextButton = new System.Windows.Forms.Button();
             this.panel3 = new System.Windows.Forms.Panel();
             this.panel4 = new System.Windows.Forms.Panel();
-            this.panel18 = new System.Windows.Forms.Panel();
-            this.label7 = new System.Windows.Forms.Label();
-            this.LogListBox = new System.Windows.Forms.ListBox();
             this.resultPictureBox = new System.Windows.Forms.PictureBox();
             this.panel19 = new System.Windows.Forms.Panel();
-            this.label4 = new System.Windows.Forms.Label();
+            this.label10 = new System.Windows.Forms.Label();
+            this.LogListBox = new System.Windows.Forms.ListBox();
+            this.panel18 = new System.Windows.Forms.Panel();
+            this.label7 = new System.Windows.Forms.Label();
             this.panel13 = new System.Windows.Forms.Panel();
-            this.panel23 = new System.Windows.Forms.Panel();
             this.BackupBrowseButton = new System.Windows.Forms.Button();
+            this.panel23 = new System.Windows.Forms.Panel();
+            this.ConfigBrowseButton = new System.Windows.Forms.Button();
+            this.ConfigFileTextBox = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
             this.BackupPathTextBox = new System.Windows.Forms.TextBox();
-            this.label9 = new System.Windows.Forms.Label();
             this.panel22 = new System.Windows.Forms.Panel();
-            this.FileBrowseButton = new System.Windows.Forms.Button();
-            this.FilePathTextBox = new System.Windows.Forms.TextBox();
+            this.CodeBrowseButton = new System.Windows.Forms.Button();
+            this.CodeFileTextBox = new System.Windows.Forms.TextBox();
             this.label8 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
             this.filePathLabel = new System.Windows.Forms.Label();
             this.panel16 = new System.Windows.Forms.Panel();
             this.label3 = new System.Windows.Forms.Label();
@@ -90,9 +93,9 @@
             this.panel2.SuspendLayout();
             this.panel6.SuspendLayout();
             this.panel4.SuspendLayout();
-            this.panel18.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.resultPictureBox)).BeginInit();
             this.panel19.SuspendLayout();
+            this.panel18.SuspendLayout();
             this.panel13.SuspendLayout();
             this.panel23.SuspendLayout();
             this.panel22.SuspendLayout();
@@ -274,10 +277,10 @@
             // panel4
             // 
             this.panel4.BackColor = System.Drawing.Color.White;
-            this.panel4.Controls.Add(this.panel18);
-            this.panel4.Controls.Add(this.LogListBox);
             this.panel4.Controls.Add(this.resultPictureBox);
             this.panel4.Controls.Add(this.panel19);
+            this.panel4.Controls.Add(this.LogListBox);
+            this.panel4.Controls.Add(this.panel18);
             this.panel4.Controls.Add(this.panel13);
             this.panel4.Controls.Add(this.panel16);
             this.panel4.Controls.Add(this.panel15);
@@ -288,12 +291,56 @@
             this.panel4.Size = new System.Drawing.Size(622, 781);
             this.panel4.TabIndex = 7;
             // 
+            // resultPictureBox
+            // 
+            this.resultPictureBox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.resultPictureBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.resultPictureBox.Location = new System.Drawing.Point(42, 554);
+            this.resultPictureBox.Name = "resultPictureBox";
+            this.resultPictureBox.Size = new System.Drawing.Size(547, 227);
+            this.resultPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.resultPictureBox.TabIndex = 24;
+            this.resultPictureBox.TabStop = false;
+            // 
+            // panel19
+            // 
+            this.panel19.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
+            this.panel19.Controls.Add(this.label10);
+            this.panel19.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel19.Location = new System.Drawing.Point(42, 515);
+            this.panel19.Name = "panel19";
+            this.panel19.Size = new System.Drawing.Size(547, 39);
+            this.panel19.TabIndex = 23;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label10.ForeColor = System.Drawing.Color.White;
+            this.label10.Location = new System.Drawing.Point(6, 13);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(58, 16);
+            this.label10.TabIndex = 3;
+            this.label10.Text = "Result";
+            // 
+            // LogListBox
+            // 
+            this.LogListBox.Dock = System.Windows.Forms.DockStyle.Top;
+            this.LogListBox.Font = new System.Drawing.Font("굴림", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.LogListBox.FormattingEnabled = true;
+            this.LogListBox.HorizontalScrollbar = true;
+            this.LogListBox.ItemHeight = 19;
+            this.LogListBox.Location = new System.Drawing.Point(42, 226);
+            this.LogListBox.Name = "LogListBox";
+            this.LogListBox.Size = new System.Drawing.Size(547, 289);
+            this.LogListBox.TabIndex = 22;
+            // 
             // panel18
             // 
             this.panel18.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
             this.panel18.Controls.Add(this.label7);
-            this.panel18.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel18.Location = new System.Drawing.Point(42, 545);
+            this.panel18.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel18.Location = new System.Drawing.Point(42, 186);
             this.panel18.Name = "panel18";
             this.panel18.Size = new System.Drawing.Size(547, 40);
             this.panel18.TabIndex = 21;
@@ -309,76 +356,26 @@
             this.label7.TabIndex = 2;
             this.label7.Text = "Log";
             // 
-            // LogListBox
-            // 
-            this.LogListBox.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.LogListBox.FormattingEnabled = true;
-            this.LogListBox.ItemHeight = 12;
-            this.LogListBox.Location = new System.Drawing.Point(42, 585);
-            this.LogListBox.Name = "LogListBox";
-            this.LogListBox.Size = new System.Drawing.Size(547, 196);
-            this.LogListBox.TabIndex = 20;
-            // 
-            // resultPictureBox
-            // 
-            this.resultPictureBox.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.resultPictureBox.Dock = System.Windows.Forms.DockStyle.Top;
-            this.resultPictureBox.Location = new System.Drawing.Point(42, 181);
-            this.resultPictureBox.Name = "resultPictureBox";
-            this.resultPictureBox.Size = new System.Drawing.Size(547, 324);
-            this.resultPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
-            this.resultPictureBox.TabIndex = 17;
-            this.resultPictureBox.TabStop = false;
-            // 
-            // panel19
-            // 
-            this.panel19.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
-            this.panel19.Controls.Add(this.label4);
-            this.panel19.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel19.Location = new System.Drawing.Point(42, 141);
-            this.panel19.Name = "panel19";
-            this.panel19.Size = new System.Drawing.Size(547, 40);
-            this.panel19.TabIndex = 16;
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label4.ForeColor = System.Drawing.Color.White;
-            this.label4.Location = new System.Drawing.Point(6, 11);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(58, 16);
-            this.label4.TabIndex = 1;
-            this.label4.Text = "Result";
-            // 
             // panel13
             // 
             this.panel13.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel13.Controls.Add(this.BackupBrowseButton);
             this.panel13.Controls.Add(this.panel23);
+            this.panel13.Controls.Add(this.BackupPathTextBox);
             this.panel13.Controls.Add(this.panel22);
+            this.panel13.Controls.Add(this.label9);
             this.panel13.Controls.Add(this.filePathLabel);
             this.panel13.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel13.Location = new System.Drawing.Point(42, 40);
             this.panel13.Name = "panel13";
-            this.panel13.Size = new System.Drawing.Size(547, 101);
+            this.panel13.Size = new System.Drawing.Size(547, 146);
             this.panel13.TabIndex = 13;
-            // 
-            // panel23
-            // 
-            this.panel23.Controls.Add(this.BackupBrowseButton);
-            this.panel23.Controls.Add(this.BackupPathTextBox);
-            this.panel23.Controls.Add(this.label9);
-            this.panel23.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panel23.Location = new System.Drawing.Point(0, 53);
-            this.panel23.Name = "panel23";
-            this.panel23.Size = new System.Drawing.Size(545, 47);
-            this.panel23.TabIndex = 3;
             // 
             // BackupBrowseButton
             // 
             this.BackupBrowseButton.BackColor = System.Drawing.Color.White;
             this.BackupBrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
-            this.BackupBrowseButton.Location = new System.Drawing.Point(478, 5);
+            this.BackupBrowseButton.Location = new System.Drawing.Point(478, 107);
             this.BackupBrowseButton.Name = "BackupBrowseButton";
             this.BackupBrowseButton.Padding = new System.Windows.Forms.Padding(3);
             this.BackupBrowseButton.Size = new System.Drawing.Size(62, 34);
@@ -387,29 +384,62 @@
             this.BackupBrowseButton.UseVisualStyleBackColor = false;
             this.BackupBrowseButton.Click += new System.EventHandler(this.BackupBrowseButton_Click);
             // 
+            // panel23
+            // 
+            this.panel23.Controls.Add(this.ConfigBrowseButton);
+            this.panel23.Controls.Add(this.ConfigFileTextBox);
+            this.panel23.Controls.Add(this.label4);
+            this.panel23.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panel23.Location = new System.Drawing.Point(0, 53);
+            this.panel23.Name = "panel23";
+            this.panel23.Size = new System.Drawing.Size(545, 43);
+            this.panel23.TabIndex = 3;
+            // 
+            // ConfigBrowseButton
+            // 
+            this.ConfigBrowseButton.BackColor = System.Drawing.Color.White;
+            this.ConfigBrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
+            this.ConfigBrowseButton.Location = new System.Drawing.Point(478, 1);
+            this.ConfigBrowseButton.Name = "ConfigBrowseButton";
+            this.ConfigBrowseButton.Padding = new System.Windows.Forms.Padding(3);
+            this.ConfigBrowseButton.Size = new System.Drawing.Size(62, 34);
+            this.ConfigBrowseButton.TabIndex = 2;
+            this.ConfigBrowseButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.ConfigBrowseButton.UseVisualStyleBackColor = false;
+            this.ConfigBrowseButton.Click += new System.EventHandler(this.ConfigBrowseButton_Click);
+            // 
+            // ConfigFileTextBox
+            // 
+            this.ConfigFileTextBox.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ConfigFileTextBox.Location = new System.Drawing.Point(110, 8);
+            this.ConfigFileTextBox.Name = "ConfigFileTextBox";
+            this.ConfigFileTextBox.ReadOnly = true;
+            this.ConfigFileTextBox.Size = new System.Drawing.Size(362, 26);
+            this.ConfigFileTextBox.TabIndex = 2;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label4.Location = new System.Drawing.Point(5, 18);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(83, 16);
+            this.label4.TabIndex = 2;
+            this.label4.Text = "Config File";
+            // 
             // BackupPathTextBox
             // 
             this.BackupPathTextBox.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.BackupPathTextBox.Location = new System.Drawing.Point(110, 9);
+            this.BackupPathTextBox.Location = new System.Drawing.Point(110, 111);
             this.BackupPathTextBox.Name = "BackupPathTextBox";
             this.BackupPathTextBox.ReadOnly = true;
             this.BackupPathTextBox.Size = new System.Drawing.Size(362, 26);
             this.BackupPathTextBox.TabIndex = 2;
             // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label9.Location = new System.Drawing.Point(5, 13);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(99, 16);
-            this.label9.TabIndex = 1;
-            this.label9.Text = "Backup Path";
-            // 
             // panel22
             // 
-            this.panel22.Controls.Add(this.FileBrowseButton);
-            this.panel22.Controls.Add(this.FilePathTextBox);
+            this.panel22.Controls.Add(this.CodeBrowseButton);
+            this.panel22.Controls.Add(this.CodeFileTextBox);
             this.panel22.Controls.Add(this.label8);
             this.panel22.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel22.Location = new System.Drawing.Point(0, 0);
@@ -417,27 +447,27 @@
             this.panel22.Size = new System.Drawing.Size(545, 53);
             this.panel22.TabIndex = 2;
             // 
-            // FileBrowseButton
+            // CodeBrowseButton
             // 
-            this.FileBrowseButton.BackColor = System.Drawing.Color.White;
-            this.FileBrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
-            this.FileBrowseButton.Location = new System.Drawing.Point(478, 7);
-            this.FileBrowseButton.Name = "FileBrowseButton";
-            this.FileBrowseButton.Padding = new System.Windows.Forms.Padding(3);
-            this.FileBrowseButton.Size = new System.Drawing.Size(62, 34);
-            this.FileBrowseButton.TabIndex = 0;
-            this.FileBrowseButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.FileBrowseButton.UseVisualStyleBackColor = false;
-            this.FileBrowseButton.Click += new System.EventHandler(this.BrowseButton_Click);
+            this.CodeBrowseButton.BackColor = System.Drawing.Color.White;
+            this.CodeBrowseButton.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(15)))), ((int)(((byte)(43)))));
+            this.CodeBrowseButton.Location = new System.Drawing.Point(478, 7);
+            this.CodeBrowseButton.Name = "CodeBrowseButton";
+            this.CodeBrowseButton.Padding = new System.Windows.Forms.Padding(3);
+            this.CodeBrowseButton.Size = new System.Drawing.Size(62, 34);
+            this.CodeBrowseButton.TabIndex = 0;
+            this.CodeBrowseButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this.CodeBrowseButton.UseVisualStyleBackColor = false;
+            this.CodeBrowseButton.Click += new System.EventHandler(this.CodeBrowseButton_Click);
             // 
-            // FilePathTextBox
+            // CodeFileTextBox
             // 
-            this.FilePathTextBox.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.FilePathTextBox.Location = new System.Drawing.Point(110, 11);
-            this.FilePathTextBox.Name = "FilePathTextBox";
-            this.FilePathTextBox.ReadOnly = true;
-            this.FilePathTextBox.Size = new System.Drawing.Size(362, 26);
-            this.FilePathTextBox.TabIndex = 1;
+            this.CodeFileTextBox.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.CodeFileTextBox.Location = new System.Drawing.Point(110, 11);
+            this.CodeFileTextBox.Name = "CodeFileTextBox";
+            this.CodeFileTextBox.ReadOnly = true;
+            this.CodeFileTextBox.Size = new System.Drawing.Size(362, 26);
+            this.CodeFileTextBox.TabIndex = 1;
             // 
             // label8
             // 
@@ -445,9 +475,19 @@
             this.label8.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.label8.Location = new System.Drawing.Point(5, 18);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(83, 16);
+            this.label8.Size = new System.Drawing.Size(75, 16);
             this.label8.TabIndex = 0;
-            this.label8.Text = "Config File";
+            this.label8.Text = "Code File";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Font = new System.Drawing.Font("굴림", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label9.Location = new System.Drawing.Point(3, 114);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(99, 16);
+            this.label9.TabIndex = 1;
+            this.label9.Text = "Backup Path";
             // 
             // filePathLabel
             // 
@@ -688,11 +728,11 @@
             this.panel2.ResumeLayout(false);
             this.panel6.ResumeLayout(false);
             this.panel4.ResumeLayout(false);
-            this.panel18.ResumeLayout(false);
-            this.panel18.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.resultPictureBox)).EndInit();
             this.panel19.ResumeLayout(false);
             this.panel19.PerformLayout();
+            this.panel18.ResumeLayout(false);
+            this.panel18.PerformLayout();
             this.panel13.ResumeLayout(false);
             this.panel13.PerformLayout();
             this.panel23.ResumeLayout(false);
@@ -735,7 +775,7 @@
         private BrightIdeasSoftware.DataTreeListView VariableDataTreeListView;
         private System.Windows.Forms.Label filePathLabel;
         private System.Windows.Forms.Panel panel12;
-        private System.Windows.Forms.Button FileBrowseButton;
+        private System.Windows.Forms.Button CodeBrowseButton;
         private BrightIdeasSoftware.ColumnButtonRenderer columnButtonRenderer3;
         private System.Windows.Forms.Panel panel15;
         private System.Windows.Forms.Panel panel14;
@@ -753,19 +793,22 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Panel panel13;
         private System.Windows.Forms.Panel panel16;
-        private System.Windows.Forms.Panel panel19;
-        private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.PictureBox resultPictureBox;
         private System.Windows.Forms.Panel panel18;
-        private System.Windows.Forms.ListBox LogListBox;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Panel panel23;
         private System.Windows.Forms.Panel panel22;
         private System.Windows.Forms.TextBox BackupPathTextBox;
         private System.Windows.Forms.Label label9;
-        private System.Windows.Forms.TextBox FilePathTextBox;
+        private System.Windows.Forms.TextBox CodeFileTextBox;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Button BackupBrowseButton;
+        private System.Windows.Forms.Button ConfigBrowseButton;
+        private System.Windows.Forms.TextBox ConfigFileTextBox;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.PictureBox resultPictureBox;
+        private System.Windows.Forms.Panel panel19;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.ListBox LogListBox;
     }
 }
 

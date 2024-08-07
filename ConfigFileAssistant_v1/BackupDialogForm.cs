@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ConfigFileAssistant_v1
+namespace ConfigFileAssistant
 {
     public partial class BackupDialogForm : Form
     {

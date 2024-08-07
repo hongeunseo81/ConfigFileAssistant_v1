@@ -1,37 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using YamlDotNet.RepresentationModel;
 
-namespace ConfigFileAssistant_v1.Manager
+namespace ConfigFileAssistant.Manager
 {
-    public class FileManager
+    public class FileHandler
     {
-        public static string CodeFile { get; set; }
+        public static string BasePath;
         public  static string ConfigFile { get; set; }
         public static string BackupFilePath { get; set; }
-
-        public static void Init(string basePath)
+        public static object Config { get; set; }
+        public static YamlMappingNode Root { get; set; }
+        public static void Init(string basePath, Object config)
         {
-            string parentDirectoryPath = Directory.GetParent(basePath)?.Parent?.FullName;
-            CodeFile = Path.Combine(parentDirectoryPath, "Config.cs");
-            ConfigFile = Path.Combine(Path.GetDirectoryName(basePath),"config.yml");
-            BackupFilePath = Path.Combine(Path.GetDirectoryName(basePath), "configbackup");
+            string directoryPath = Path.GetDirectoryName(basePath);
+            ConfigFile = Path.Combine(directoryPath, "config.yml");
+            BackupFilePath = Path.Combine(directoryPath, "configbackup");
+            Config = config;
+            Root = LoadYamlFile();
         }
         
-        public static void SetCodeFilePath(string filePath, TextBox filePathTextBox)
+        public static YamlMappingNode LoadYamlFile()
         {
-            CodeFile = filePath;
-            filePathTextBox.Text = filePath;
+            YamlStream Yaml = new YamlStream();
+            using (var reader = new StreamReader(ConfigFile))
+            {
+                Yaml.Load(reader);
+            }
+            if (Yaml.Documents.Count != 0)
+            {
+                return (YamlMappingNode)Yaml.Documents[0].RootNode;
+            }
+            return new YamlMappingNode();
         }
+
         public static void SetConfigFilePath(string filePath, TextBox filePathTextBox)
         {
             ConfigFile = filePath;
             filePathTextBox.Text = filePath;
+            Root = LoadYamlFile();
         }
         public static void SetBackupPath(string backupFolder, TextBox backupPathTextBox)
         {
@@ -45,11 +55,12 @@ namespace ConfigFileAssistant_v1.Manager
             string backupFilePath = Path.Combine(backupFolder, $"config_{DateTime.Now:yyyyMMddHHmmss}.yml");
             File.Copy(ConfigFile, backupFilePath, true);
         }
-        public static void Save(YamlMappingNode root) 
+        public static void Save(YamlMappingNode root, string filepath) 
         {
             YamlStream yaml = new YamlStream();
             yaml.Documents.Add(new YamlDocument(root));
-            using (var writer = new StreamWriter(ConfigFile))
+            filepath = filepath == null ? ConfigFile : filepath;
+            using (var writer = new StreamWriter(filepath))
             {
                 yaml.Save(writer, false);
             }

@@ -1,4 +1,4 @@
-﻿using ConfigFileAssistant_v1;
+﻿using ConfigFileAssistant;
 using CoPick.Setting;
 using System;
 using System.Collections.Generic;
@@ -17,15 +17,17 @@ namespace ConfigTypeFinder
         private static Dictionary<string, object[]> FunctionArgs;
         private static Dictionary<string, Type> types;
 
-        public static void init()
+        public static void Init()
         {
             validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
             FunctionArgs = new Dictionary<string, object[]>();
-            types = new Dictionary<string, Type>();
-            types.Add(typeof(Dictionary<,>).Name, typeof(Dictionary<,>));
-            types.Add(typeof(List<>).Name, typeof(List<>));
-            types.Add(typeof(string).Name, typeof(string));
-            types.Add(typeof(bool).Name, typeof(bool));
+            types = new Dictionary<string, Type>
+            {
+                { typeof(Dictionary<,>).Name, typeof(Dictionary<,>) },
+                { typeof(List<>).Name, typeof(List<>) },
+                { typeof(string).Name, typeof(string) },
+                { typeof(bool).Name, typeof(bool) }
+            };
         }
 
         public static Dictionary<string, Type> GetAllTypes()

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ConfigFileAssistant_v1.Properties
+namespace ConfigFileAssistant.Properties
 {
 
 

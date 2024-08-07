@@ -1,4 +1,4 @@
-﻿namespace ConfigFileAssistant_v1
+﻿namespace ConfigFileAssistant
 {
     partial class BackupDialogForm
     {

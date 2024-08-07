@@ -3,14 +3,14 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-namespace ConfigFileAssistant_v1
+namespace ConfigFileAssistant
 {
-    public partial class ObjectCreater : Form
+    public partial class ObjectCreator : Form
     {
         private string variablePath; 
         public List<ConfigVariable> CreatedVariables { get; private set; }
 
-        public ObjectCreater(string path)
+        public ObjectCreator(string path)
         {
             variablePath = path;
             CreatedVariables = new List<ConfigVariable>();
@@ -67,6 +67,11 @@ namespace ConfigFileAssistant_v1
                 }
             }
 
+        }
+
+        private void cancelButton_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 

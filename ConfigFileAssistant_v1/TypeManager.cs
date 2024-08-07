@@ -11,11 +11,11 @@ using YamlDotNet.Core.Tokens;
 
 namespace ConfigTypeFinder
 {
-    public class TypeHandler
+    public class TypeManager
     {
         private static Dictionary<string, Func<object, (bool, string)>> validatorFunction;
         private static Dictionary<string, object[]> FunctionArgs;
-        private static Dictionary<string, Type> types;
+        private static Dictionary<string,Type> types;
 
         public static void init()
         {
@@ -34,12 +34,12 @@ namespace ConfigTypeFinder
         }
         public static void AddType(string typeName, Type type)
         {
-            if (!types.ContainsKey(typeName))
+            if(!types.ContainsKey(typeName))
             {
                 types.Add(typeName, type);
             }
         }
-        public static void MakeFunction(string name, ValidatorType validatorType, string info)
+        public static void MakeFunction(string name,ValidatorType validatorType, string info)
         {
             var infoArray = info.Split(' ');
             var size = infoArray[1].Split(new char[] { '[', ']' }, StringSplitOptions.RemoveEmptyEntries);
@@ -73,10 +73,10 @@ namespace ConfigTypeFinder
                 }
                 if (TypeValidator.ValidationDict.TryGetValue(validatorType, out var validatorFunc))
                 {
-                    if (!validatorFunction.ContainsKey(name))
+                    if(!validatorFunction.ContainsKey(name))
                     {
                         validatorFunction.Add(name, validatorFunc(args));
-                        if (args.Count() > 0)
+                        if(args.Count() > 0)
                         {
                             FunctionArgs.Add(name, args);
                         }
@@ -106,29 +106,7 @@ namespace ConfigTypeFinder
                 }
                 return message;
             }
-            else
-            {
-                bool isValid = false;
-                string message = string.Empty;
-                if (variableInfo.Type == typeof(Int32))
-                {
-                    isValid = Int32.TryParse(value.ToString(), out int intValue);
-                    message = isValid ? string.Empty : "Please enter a value between -2,147,483,648 and 2,147,483,647";
-                }
-                else if (variableInfo.Type == typeof(Int64))
-                {
-                    isValid = Int64.TryParse(value.ToString(), out long longValue);
-                    message = isValid ? string.Empty : "Please enter a value between -9,223,372,036,854,775,808 and 9,223,372,036,854,775,807";
-                }
-                else if (variableInfo.Type == typeof(DateTime))
-                {
-                    isValid = DateTime.TryParse(value.ToString(), out DateTime dateTimeValue);
-                    message = isValid ? string.Empty : "Please enter a value between -2,147,483,648 and 2,147,483,647";
-                }
-
-                return message;
-            }
-
+            return string.Empty;
         }
 
         public static void ConvertTypeNameToType(VariableInfo newVariable)

@@ -1,4 +1,4 @@
-﻿using ConfigFileAssistant_v1;
+﻿using ConfigFileAssistant;
 using CoPick.Setting;
 using System;
 using System.Collections.Generic;
@@ -11,32 +11,34 @@ using YamlDotNet.Core.Tokens;
 
 namespace ConfigTypeFinder
 {
-    public class TypeHandler
+    public class TypeManager
     {
-        private static Dictionary<string, Func<object, (bool, string)>> validatorFunction;
-        private static Dictionary<string, object[]> FunctionArgs;
-        private static Dictionary<string, Type> types;
+        private static Dictionary<string, Func<object, (bool, string)>> s_validatorFunction;
+        private static Dictionary<string, object[]> s_functionArgs;
+        private static Dictionary<string, Type> s_types;
 
-        public static void init()
+        public static void Init()
         {
-            validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
-            FunctionArgs = new Dictionary<string, object[]>();
-            types = new Dictionary<string, Type>();
-            types.Add(typeof(Dictionary<,>).Name, typeof(Dictionary<,>));
-            types.Add(typeof(List<>).Name, typeof(List<>));
-            types.Add(typeof(string).Name, typeof(string));
-            types.Add(typeof(bool).Name, typeof(bool));
+            s_validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
+            s_functionArgs = new Dictionary<string, object[]>();
+            s_types = new Dictionary<string, Type>
+            {
+                { typeof(Dictionary<,>).Name, typeof(Dictionary<,>) },
+                { typeof(List<>).Name, typeof(List<>) },
+                { typeof(string).Name, typeof(string) },
+                { typeof(bool).Name, typeof(bool) }
+            };
         }
 
         public static Dictionary<string, Type> GetAllTypes()
         {
-            return types;
+            return s_types;
         }
         public static void AddType(string typeName, Type type)
         {
-            if (!types.ContainsKey(typeName))
+            if (!s_types.ContainsKey(typeName))
             {
-                types.Add(typeName, type);
+                s_types.Add(typeName, type);
             }
         }
         public static void MakeFunction(string name, ValidatorType validatorType, string info)
@@ -73,35 +75,35 @@ namespace ConfigTypeFinder
                 }
                 if (TypeValidator.ValidationDict.TryGetValue(validatorType, out var validatorFunc))
                 {
-                    if (!validatorFunction.ContainsKey(name))
+                    if (!s_validatorFunction.ContainsKey(name))
                     {
-                        validatorFunction.Add(name, validatorFunc(args));
+                        s_validatorFunction.Add(name, validatorFunc(args));
                         if (args.Count() > 0)
                         {
-                            FunctionArgs.Add(name, args);
+                            s_functionArgs.Add(name, args);
                         }
                     }
                 }
             }
             AddType(validatorType.ToString(), typeof(string));
         }
-        public static string IsValidateType(VariableInfo variableInfo, string value)
+        public static string IsValidateType(ConfigVariable ConfigVariable, string value)
         {
             if (value == "")
             {
                 return string.Empty;
             }
-            if (variableInfo.Type == typeof(bool))
+            if (ConfigVariable.Type == typeof(bool))
             {
                 return (value == "True" || value == "False") ? string.Empty : "Please enter True or False.";
             }
-            if (validatorFunction.TryGetValue(variableInfo.Name, out var validatorFunc))
+            if (s_validatorFunction.TryGetValue(ConfigVariable.Name, out var validatorFunc))
             {
                 var isValidate = validatorFunc(value).Item1;
                 var message = validatorFunc(value).Item2;
-                if (!isValidate && FunctionArgs.ContainsKey(variableInfo.Name))
+                if (!isValidate && s_functionArgs.ContainsKey(ConfigVariable.Name))
                 {
-                    object[] args = FunctionArgs[variableInfo.Name];
+                    object[] args = s_functionArgs[ConfigVariable.Name];
                     message = $"Please enter a value between {args[0]} and {args[1]}.";
                 }
                 return message;
@@ -110,20 +112,20 @@ namespace ConfigTypeFinder
             {
                 bool isValid = false;
                 string message = string.Empty;
-                if (variableInfo.Type == typeof(Int32))
+                if (ConfigVariable.Type == typeof(Int32))
                 {
                     isValid = Int32.TryParse(value.ToString(), out int intValue);
                     message = isValid ? string.Empty : "Please enter a value between -2,147,483,648 and 2,147,483,647";
                 }
-                else if (variableInfo.Type == typeof(Int64))
+                else if (ConfigVariable.Type == typeof(Int64))
                 {
                     isValid = Int64.TryParse(value.ToString(), out long longValue);
                     message = isValid ? string.Empty : "Please enter a value between -9,223,372,036,854,775,808 and 9,223,372,036,854,775,807";
                 }
-                else if (variableInfo.Type == typeof(DateTime))
+                else if (ConfigVariable.Type == typeof(DateTime))
                 {
                     isValid = DateTime.TryParse(value.ToString(), out DateTime dateTimeValue);
-                    message = isValid ? string.Empty : "Please enter a value between -2,147,483,648 and 2,147,483,647";
+                    message = isValid ? string.Empty : "Please enter a format yyyy-MM-ddTHH:mm:ss.fffffffK";
                 }
 
                 return message;
@@ -131,10 +133,10 @@ namespace ConfigTypeFinder
 
         }
 
-        public static void ConvertTypeNameToType(VariableInfo newVariable)
+        public static void ConvertTypeNameToType(ConfigVariable newVariable)
         {
             var typeName = newVariable.TypeName;
-            newVariable.Type = types[typeName];
+            newVariable.Type = s_types[typeName];
         }
     }
 

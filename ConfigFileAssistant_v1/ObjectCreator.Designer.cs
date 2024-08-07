@@ -1,6 +1,6 @@
-﻿namespace ConfigFileAssistant_v1
+﻿namespace ConfigFileAssistant
 {
-    partial class ObjectCreater
+    partial class ObjectCreator
     {
         /// <summary>
         /// Required designer variable.
@@ -78,6 +78,7 @@
             this.cancelButton.TabIndex = 0;
             this.cancelButton.Text = "Cancel";
             this.cancelButton.UseVisualStyleBackColor = true;
+            this.cancelButton.Click += new System.EventHandler(this.cancelButton_Click);
             // 
             // dataGridView
             // 
@@ -88,7 +89,7 @@
             this.dataGridView.Size = new System.Drawing.Size(725, 124);
             this.dataGridView.TabIndex = 2;
             // 
-            // ObjectCreater
+            // ObjectCreator
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -97,7 +98,7 @@
             this.Controls.Add(this.dataGridView);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
-            this.Name = "ObjectCreater";
+            this.Name = "ObjectCreator";
             this.Text = "ObjectCreater";
             this.Load += new System.EventHandler(this.ObjectCreater_Load);
             this.panel2.ResumeLayout(false);

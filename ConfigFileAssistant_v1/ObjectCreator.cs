@@ -7,12 +7,12 @@ namespace ConfigFileAssistant
 {
     public partial class ObjectCreator : Form
     {
-        private string variablePath; 
+        private string _variablePath; 
         public List<ConfigVariable> CreatedVariables { get; private set; }
 
         public ObjectCreator(string path)
         {
-            variablePath = path;
+            _variablePath = path;
             CreatedVariables = new List<ConfigVariable>();
             InitializeComponent();
         }
@@ -58,7 +58,7 @@ namespace ConfigFileAssistant
                 if (row.Cells["Name"].Value != null && row.Cells["Type"].Value != null)
                 {
                     var value = row.Cells["Value"].Value == null ? string.Empty : row.Cells["Value"].Value.ToString();
-                    var ConfigVariable = new ConfigVariable(variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(),value);
+                    var ConfigVariable = new ConfigVariable(_variablePath, row.Cells["Name"].Value.ToString(), row.Cells["Type"].Value.ToString(),value);
                     TypeManager.ConvertTypeNameToType(ConfigVariable);
                     CreatedVariables.Add(ConfigVariable);
                     this.DialogResult = DialogResult.OK;

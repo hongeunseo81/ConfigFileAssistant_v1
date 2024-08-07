@@ -15,14 +15,14 @@ namespace ConfigFileAssistant
 {
     public partial class MainForm : Form
     {
-        private string BasePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug";
+        private string _basePath = "C:/Users/HONGEUNSEO/source/repos/ConfigFileAssistant_v1/ConfigFileAssistant_v1/bin/Debug";
         private  ImageManager _imageManager;
         private VariableHandler _variableProvider;
 
-        private bool IsExpanded = true;
-        private bool IsEditMode = false;
-        private ToolTip ToolTip;
-        private ContextMenuStrip ContextMenuStrip;
+        private bool _isExpanded = true;
+        private bool _isEditMode = false;
+        private ToolTip _toolTip;
+        private ContextMenuStrip _contextMenuStrip;
 
         public enum Status
         {
@@ -42,51 +42,50 @@ namespace ConfigFileAssistant
         }
         private void Init()
         {
-            _imageManager = new ImageManager(BasePath);
+            _imageManager = new ImageManager(_basePath);
             _variableProvider = new VariableHandler();
             _variableProvider.ExtractCsVariables();
             _variableProvider.ExtractYmlVariables();
 
-            ConfigFileTextBox.Text = FileHandler.ConfigFile;
-            BackupPathTextBox.Text = FileHandler.BackupFilePath;
+            ConfigFileTextBox.Text = FileHandler.s_configFile;
+            BackupPathTextBox.Text = FileHandler.s_backupFilePath;
             this.Icon = _imageManager.LogoIcon;
             LogoPictureBox.Image = _imageManager.LogoImage;
         }
         // Set Up
         private void SetupButtonImages()
         {
-            ToolTip = new ToolTip();
+            _toolTip = new ToolTip();
             _imageManager.SetButtonImage(ExpandAllButton, "expand", _imageManager.ExpandImageList,false);
             _imageManager.SetButtonImage(ModeButton, "edit-off", _imageManager.EditModeImageList, false);
-            ToolTip.SetToolTip(ModeButton, "Current View: Read-Only, Click to Edit");
+            _toolTip.SetToolTip(ModeButton, "Current View: Read-Only, Click to Edit");
 
             _imageManager.SetButtonImage(ConfigBrowseButton, "browse", _imageManager.ButtonImageList, false);
-            ToolTip.SetToolTip(ConfigBrowseButton, "Browse other config files");
+            _toolTip.SetToolTip(ConfigBrowseButton, "Browse other config files");
 
             _imageManager.SetButtonImage(BackupBrowseButton, "browse", _imageManager.ButtonImageList, false);
-            ToolTip.SetToolTip(BackupBrowseButton, "Change backup file path");
+            _toolTip.SetToolTip(BackupBrowseButton, "Change backup file path");
 
             _imageManager.SetButtonImage(FixAllButton, "fix", _imageManager.ButtonImageList);
-            ToolTip.SetToolTip(FixAllButton, "Fix All Errors");
+            _toolTip.SetToolTip(FixAllButton, "Fix All Errors");
 
             _imageManager.SetButtonImage(SaveAsButton, "save-as", _imageManager.ButtonImageList);
-            ToolTip.SetToolTip(SaveAsButton, "Save As");
+            _toolTip.SetToolTip(SaveAsButton, "Save As");
 
             _imageManager.SetButtonImage(ResetButton, "reset", _imageManager.ButtonImageList);
-            ToolTip.SetToolTip(ResetButton, "Reset");
+            _toolTip.SetToolTip(ResetButton, "Reset");
         }
         private void SetupMenuItems()
         {
-            ContextMenuStrip = new ContextMenuStrip();
+            _contextMenuStrip = new ContextMenuStrip();
             var addChildMenuItem = new ToolStripMenuItem("Add Child");
             var addRowMenuItem = new ToolStripMenuItem("Add Row");
             var deleteRowMenuItem = new ToolStripMenuItem("Delete Row");
-            ContextMenuStrip.Items.AddRange(new ToolStripItem[] { addChildMenuItem, addRowMenuItem, deleteRowMenuItem });
+            _contextMenuStrip.Items.AddRange(new ToolStripItem[] { addChildMenuItem, addRowMenuItem, deleteRowMenuItem });
             addChildMenuItem.Click += AddChildMenuItem_Click;
             addRowMenuItem.Click += AddRowMenuItem_Click;
             deleteRowMenuItem.Click += DeleteRowMenuItem_Click;
         }
-
         private void SetupData()
         {
             var result = _variableProvider.GetCompareResult();
@@ -222,7 +221,7 @@ namespace ConfigFileAssistant
             var selectedObject = VariableDataTreeListView.GetModelObject(e.RowIndex) as ConfigVariable;
             bool isGenericType = selectedObject.Type.IsGenericType;
 
-            foreach (ToolStripItem item in ContextMenuStrip.Items)
+            foreach (ToolStripItem item in _contextMenuStrip.Items)
             {
                 if (item is ToolStripMenuItem menuItem && menuItem.Text == "Add Child")
                 {
@@ -231,7 +230,7 @@ namespace ConfigFileAssistant
                 }
             }
             var screenPosition = VariableDataTreeListView.PointToScreen(e.Location);
-            ContextMenuStrip.Show(screenPosition);
+            _contextMenuStrip.Show(screenPosition);
 
             e.Handled = true;
         }
@@ -464,34 +463,34 @@ namespace ConfigFileAssistant
         // Toggle 
         private void ModeButton_Click(object sender, EventArgs e)
         {
-            if (IsEditMode)
+            if (_isEditMode)
             {
-                IsEditMode = false;
+                _isEditMode = false;
                 ModeButton.Image = _imageManager.EditModeImageList.Images["edit-off"];
-                ToolTip.SetToolTip(ModeButton, "Current View: Read View, Click to Edit View");
+                _toolTip.SetToolTip(ModeButton, "Current View: Read View, Click to Edit View");
             }
             else
             {
-                IsEditMode = true;
+                _isEditMode = true;
                 ModeButton.Image = _imageManager.EditModeImageList.Images["edit-on"];
-                ToolTip.SetToolTip(ModeButton, "Current View: Edit, Click to Read View");
+                _toolTip.SetToolTip(ModeButton, "Current View: Edit, Click to Read View");
             }
-            modeLabel.Text = IsEditMode ? "On" : "Off";
-            SetEditable(IsEditMode);
+            modeLabel.Text = _isEditMode ? "On" : "Off";
+            SetEditable(_isEditMode);
         }
         private void ExpandAllButton_Click(object sender, EventArgs e)
         {
-            if (IsExpanded)
+            if (_isExpanded)
             {
                 VariableDataTreeListView.CollapseAll();
                 ExpandAllButton.Image = _imageManager.ExpandImageList.Images["expand"];
-                IsExpanded = false;
+                _isExpanded = false;
             }
             else
             {
                 VariableDataTreeListView.ExpandAll();
                 ExpandAllButton.Image = _imageManager.ExpandImageList.Images["collapse"];
-                IsExpanded = true;
+                _isExpanded = true;
             }
         }
 
@@ -503,7 +502,7 @@ namespace ConfigFileAssistant
             {
                 _variableProvider.ExtractYmlVariables();
                 SetupData();
-                MakeResetLog(FileHandler.ConfigFile);
+                MakeResetLog(FileHandler.s_configFile);
             }
 
         }
@@ -617,7 +616,7 @@ namespace ConfigFileAssistant
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    var oldFile = FileHandler.ConfigFile;
+                    var oldFile = FileHandler.s_configFile;
                     var newFile = openFileDialog.FileName;
                     FileHandler.SetConfigFilePath(openFileDialog.FileName, ConfigFileTextBox);
                     MakeFileLog("Config", oldFile, newFile);

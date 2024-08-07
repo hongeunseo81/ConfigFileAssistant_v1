@@ -13,15 +13,15 @@ namespace ConfigTypeFinder
 {
     public class TypeManager
     {
-        private static Dictionary<string, Func<object, (bool, string)>> validatorFunction;
-        private static Dictionary<string, object[]> FunctionArgs;
-        private static Dictionary<string, Type> types;
+        private static Dictionary<string, Func<object, (bool, string)>> s_validatorFunction;
+        private static Dictionary<string, object[]> s_functionArgs;
+        private static Dictionary<string, Type> s_types;
 
         public static void Init()
         {
-            validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
-            FunctionArgs = new Dictionary<string, object[]>();
-            types = new Dictionary<string, Type>
+            s_validatorFunction = new Dictionary<string, Func<object, (bool, string)>>();
+            s_functionArgs = new Dictionary<string, object[]>();
+            s_types = new Dictionary<string, Type>
             {
                 { typeof(Dictionary<,>).Name, typeof(Dictionary<,>) },
                 { typeof(List<>).Name, typeof(List<>) },
@@ -32,13 +32,13 @@ namespace ConfigTypeFinder
 
         public static Dictionary<string, Type> GetAllTypes()
         {
-            return types;
+            return s_types;
         }
         public static void AddType(string typeName, Type type)
         {
-            if (!types.ContainsKey(typeName))
+            if (!s_types.ContainsKey(typeName))
             {
-                types.Add(typeName, type);
+                s_types.Add(typeName, type);
             }
         }
         public static void MakeFunction(string name, ValidatorType validatorType, string info)
@@ -75,12 +75,12 @@ namespace ConfigTypeFinder
                 }
                 if (TypeValidator.ValidationDict.TryGetValue(validatorType, out var validatorFunc))
                 {
-                    if (!validatorFunction.ContainsKey(name))
+                    if (!s_validatorFunction.ContainsKey(name))
                     {
-                        validatorFunction.Add(name, validatorFunc(args));
+                        s_validatorFunction.Add(name, validatorFunc(args));
                         if (args.Count() > 0)
                         {
-                            FunctionArgs.Add(name, args);
+                            s_functionArgs.Add(name, args);
                         }
                     }
                 }
@@ -97,13 +97,13 @@ namespace ConfigTypeFinder
             {
                 return (value == "True" || value == "False") ? string.Empty : "Please enter True or False.";
             }
-            if (validatorFunction.TryGetValue(ConfigVariable.Name, out var validatorFunc))
+            if (s_validatorFunction.TryGetValue(ConfigVariable.Name, out var validatorFunc))
             {
                 var isValidate = validatorFunc(value).Item1;
                 var message = validatorFunc(value).Item2;
-                if (!isValidate && FunctionArgs.ContainsKey(ConfigVariable.Name))
+                if (!isValidate && s_functionArgs.ContainsKey(ConfigVariable.Name))
                 {
-                    object[] args = FunctionArgs[ConfigVariable.Name];
+                    object[] args = s_functionArgs[ConfigVariable.Name];
                     message = $"Please enter a value between {args[0]} and {args[1]}.";
                 }
                 return message;
@@ -136,7 +136,7 @@ namespace ConfigTypeFinder
         public static void ConvertTypeNameToType(ConfigVariable newVariable)
         {
             var typeName = newVariable.TypeName;
-            newVariable.Type = types[typeName];
+            newVariable.Type = s_types[typeName];
         }
     }
 

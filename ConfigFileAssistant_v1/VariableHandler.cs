@@ -15,26 +15,26 @@ namespace ConfigFileAssistant
 {
     public class VariableHandler
     {
-        private Object Instance;
-        private YamlMappingNode Root;
-        private Object Config;
+        private Object _instance;
+        private YamlMappingNode _root;
+        private Object _config;
+        private ConfigValidator _configValidator;
+        private Dictionary<String, ConfigVariable> _errorVariables = new Dictionary<string, ConfigVariable>();
         public List<ConfigVariable> CsVariables;
         public List<ConfigVariable> YmlVariables;
-        private ConfigValidator _configValidator;
-        private Dictionary<String, ConfigVariable> ErrorVariables = new Dictionary<string, ConfigVariable>();
 
         public VariableHandler()
         {
-            Config = FileHandler.Config;
+            _config = FileHandler.s_config;
             _configValidator = new ConfigValidator();
             TypeManager.Init();
         }
         
         public void ExtractYmlVariables()
         {
-            Root = FileHandler.Root;
+            _root = FileHandler.s_root;
             YmlVariables = new List<ConfigVariable>();
-            ExtractYmlVariablesRecursive(Root, YmlVariables, "");
+            ExtractYmlVariablesRecursive(_root, YmlVariables, "");
         }
         private void ExtractYmlVariablesRecursive(YamlNode node, List<ConfigVariable> variables, string prefix)
         {
@@ -99,11 +99,11 @@ namespace ConfigFileAssistant
         public void ExtractCsVariables()
         {
             CsVariables = new List<ConfigVariable>();
-            var type = Config.GetType();
-            Instance = Activator.CreateInstance(type);
+            var type = _config.GetType();
+            _instance = Activator.CreateInstance(type);
             foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                object defaultValue = GetDefaultValue(property, Instance);
+                object defaultValue = GetDefaultValue(property, _instance);
                 ExtractCsVariablesRecursive(property.Name, property.PropertyType, defaultValue, CsVariables);
             }
         }
@@ -186,7 +186,7 @@ namespace ConfigFileAssistant
         public List<ConfigVariable> GetCompareResult()
         {
             var result = _configValidator.CompareVariables(YmlVariables, CsVariables);
-            ErrorVariables = _configValidator.ErrorVariables;
+            _errorVariables = _configValidator.ErrorVariables;
             return result;
         }
         public List<ConfigVariable> GetParentVariables(string fullName)
@@ -320,9 +320,9 @@ namespace ConfigFileAssistant
                 if (resultMessage == string.Empty)
                 {
                     target.Value = value;
-                    if (ErrorVariables.ContainsKey(target.FullName))
+                    if (_errorVariables.ContainsKey(target.FullName))
                     {
-                        ErrorVariables.Remove(target.FullName);
+                        _errorVariables.Remove(target.FullName);
                     }
                 }
             }
@@ -336,11 +336,11 @@ namespace ConfigFileAssistant
 
         public void RemoveError(string error)
         {
-            ErrorVariables.Remove(error);
+            _errorVariables.Remove(error);
         }
         public Dictionary<string, ConfigVariable> GetErrors()
         {
-            return ErrorVariables;
+            return _errorVariables;
         }
         
         public YamlMappingNode ConvertYamlFromCode()
